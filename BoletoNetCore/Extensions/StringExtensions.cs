@@ -6,29 +6,27 @@ namespace BoletoNetCore.Extensions
     {
         public static string Right(this string value, int length)
         {
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
                 return string.Empty;
             return value.Length <= length ? value : value.Substring(value.Length - length);
         }
+
         public static string Left(this string value, int length)
         {
-            if (String.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(value))
                 return string.Empty;
             return value.Length <= length ? value : value.Substring(0, length);
         }
 
         public static string MidVB(this string str, int start, int length)
         {
-            return str.Mid(--start,length);
+            return str.Mid(--start, length);
         }
 
         public static string Mid(this string str, int startIndex, int length)
         {
             if (str.Length <= 0 || startIndex >= str.Length) return string.Empty;
-            if (startIndex + length > str.Length)
-            {
-                length = str.Length - startIndex;
-            }
+            if (startIndex + length > str.Length) length = str.Length - startIndex;
             return str.Substring(startIndex, length);
         }
 
@@ -44,6 +42,7 @@ namespace BoletoNetCore.Extensions
                 else
                     peso = peso + 1;
             }
+
             var resto = soma % 11;
             if (resto <= 1)
                 digito = "0";
@@ -64,6 +63,7 @@ namespace BoletoNetCore.Extensions
                 else
                     peso = peso + 1;
             }
+
             var resto = soma % 11;
             if (resto <= 1)
                 digito = "0";
@@ -75,12 +75,10 @@ namespace BoletoNetCore.Extensions
         public static string CalcularDVSicoob(this string texto)
         {
             string digito, fatorMultiplicacao = "319731973197319731973";
-            int soma = 0;
-            for (int i = 0; i < 21; i++)
-            {
+            var soma = 0;
+            for (var i = 0; i < 21; i++)
                 soma += Convert.ToInt16(texto.Substring(i, 1)) * Convert.ToInt16(fatorMultiplicacao.Substring(i, 1));
-            }
-            int resto = (soma % 11);
+            var resto = soma % 11;
             if (resto <= 1)
                 digito = "0";
             else
@@ -94,12 +92,13 @@ namespace BoletoNetCore.Extensions
             int pesoMaximo = 7, soma = 0, peso = 2;
             for (var i = texto.Length - 1; i >= 0; i--)
             {
-                soma = soma + (int)char.GetNumericValue(texto[i]) * peso;
+                soma = soma + (int) char.GetNumericValue(texto[i]) * peso;
                 if (peso == pesoMaximo)
                     peso = 2;
                 else
                     peso = peso + 1;
             }
+
             var resto = soma % 11;
             switch (resto)
             {
@@ -113,6 +112,7 @@ namespace BoletoNetCore.Extensions
                     digito = (11 - resto).ToString();
                     break;
             }
+
             return digito;
         }
 
@@ -122,9 +122,9 @@ namespace BoletoNetCore.Extensions
             int soma = 0, peso = 2, digTmp = 0;
             for (var i = texto.Length - 1; i >= 0; i--)
             {
-                digTmp = (int)char.GetNumericValue(texto[i]) * peso;
+                digTmp = (int) char.GetNumericValue(texto[i]) * peso;
                 if (digTmp > 9)
-                    digTmp = (digTmp / 10) + (digTmp % 10);
+                    digTmp = digTmp / 10 + digTmp % 10;
 
                 soma = soma + digTmp;
 
@@ -133,7 +133,8 @@ namespace BoletoNetCore.Extensions
                 else
                     peso = peso + 1;
             }
-            var resto = (soma % 10);
+
+            var resto = soma % 10;
             if (resto == 0)
                 digito = "0";
             else
@@ -147,12 +148,13 @@ namespace BoletoNetCore.Extensions
             int pesoMaximo = 9, soma = 0, peso = 2;
             for (var i = texto.Length - 1; i >= 0; i--)
             {
-                soma = soma + (int)char.GetNumericValue(texto[i]) * peso;
+                soma = soma + (int) char.GetNumericValue(texto[i]) * peso;
                 if (peso == pesoMaximo)
                     peso = 2;
                 else
                     peso = peso + 1;
             }
+
             var resto = soma % 11;
             switch (resto)
             {
@@ -166,8 +168,8 @@ namespace BoletoNetCore.Extensions
                     digito = (11 - resto).ToString();
                     break;
             }
+
             return digito;
         }
-
     }
 }

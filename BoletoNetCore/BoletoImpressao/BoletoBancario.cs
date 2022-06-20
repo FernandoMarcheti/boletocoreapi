@@ -1,57 +1,76 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-//Envio por email
 using System.IO;
+using System.Linq;
 using System.Net.Mail;
 using System.Net.Mime;
 using System.Reflection;
 using System.Text;
+using BoletoNetCore.Banco;
+using BoletoNetCore.Util;
 
-namespace BoletoNetCore
+//Envio por email
+
+namespace BoletoNetCore.BoletoImpressao
 {
-    using System.Drawing.Imaging;
-    using System.Linq;
-
-    [Serializable()]
+    [Serializable]
     public class BoletoBancario
     {
-        String _vLocalLogoBeneficiario = String.Empty;
+        private string _vLocalLogoBeneficiario = string.Empty;
+
+        public Image GeraImagemCodigoBarras(Boleto.Boleto boleto)
+        {
+            var cb = new BarCode2of5i(boleto.CodigoBarra.CodigoDeBarras, 1, 50,
+                boleto.CodigoBarra.CodigoDeBarras.Length);
+            return cb.ToBitmap();
+        }
+
+        private void CopiarStream(Stream entrada, Stream saida)
+        {
+            var bytesLidos = 0;
+            var imgBuffer = new byte[entrada.Length];
+
+            while ((bytesLidos = entrada.Read(imgBuffer, 0, imgBuffer.Length)) > 0)
+                saida.Write(imgBuffer, 0, bytesLidos);
+        }
 
         #region Variaveis
 
         private string _instrucoesHtml = string.Empty;
-        private bool _mostrarCodigoCarteira = false;
-        private bool _formatoCarne = false;
+        private bool _mostrarCodigoCarteira;
+        private bool _formatoCarne;
+
         #endregion Variaveis
 
         #region Propriedades
 
         /// <summary>
-        /// Mostra o código da carteira
+        ///     Mostra o código da carteira
         /// </summary>
         public bool MostrarCodigoCarteira
         {
-            get { return _mostrarCodigoCarteira; }
-            set { _mostrarCodigoCarteira = value; }
+            get => _mostrarCodigoCarteira;
+            set => _mostrarCodigoCarteira = value;
         }
 
         public bool ExibirDemonstrativo { get; set; }
 
         /// <summary>
-        /// Mostra o código da carteira
+        ///     Mostra o código da carteira
         /// </summary>
         public bool FormatoCarne
         {
-            get { return _formatoCarne; }
-            set { _formatoCarne = value; }
+            get => _formatoCarne;
+            set => _formatoCarne = value;
         }
 
-        public Boleto Boleto { get; set; }
+        public Boleto.Boleto Boleto { get; set; }
 
         public IBanco Banco { get; set; }
 
         #region Propriedades
+
         public bool MostrarComprovanteEntregaLivre { get; set; }
 
         public bool MostrarComprovanteEntrega { get; set; }
@@ -63,16 +82,17 @@ namespace BoletoNetCore
         public bool OcultarReciboPagador { get; set; }
 
         public bool GerarArquivoRemessa { get; set; }
-        /// <summary> 
-        /// Mostra o termo "Contra Apresentação" na data de vencimento do boleto
+
+        /// <summary>
+        ///     Mostra o termo "Contra Apresentação" na data de vencimento do boleto
         /// </summary>
         public bool MostrarContraApresentacaoNaDataVencimento { get; set; }
 
         public bool MostrarEnderecoBeneficiario { get; set; }
-        #endregion Propriedades
 
         #endregion Propriedades
 
+        #endregion Propriedades
 
 
         #region Override
@@ -82,7 +102,7 @@ namespace BoletoNetCore
             var assembly = Assembly.GetExecutingAssembly();
             using (var str = new BinaryReader(assembly.GetManifestResourceStream(resourcePath)))
             {
-                return Convert.ToBase64String(str.ReadBytes((int)str.BaseStream.Length));
+                return Convert.ToBase64String(str.ReadBytes((int) str.BaseStream.Length));
             }
         }
 
@@ -116,16 +136,22 @@ namespace BoletoNetCore
 
         protected string Render()
         {
-            var urlImagemLogo = "data:image/jpg;base64," + GetResourceImage("BoletoNetCore.Imagens." + Utils.FormatCode(Boleto.Banco.Codigo.ToString(), 3) + ".jpg");
+            var urlImagemLogo = "data:image/jpg;base64," + GetResourceImage("BoletoNetCore.Imagens." +
+                                                                            Utils.FormatCode(
+                                                                                Boleto.Banco.Codigo.ToString(), 3) +
+                                                                            ".jpg");
             var urlImagemBarra = "data:image/jpg;base64," + GetResourceImage("BoletoNetCore.Imagens.barra.gif");
 
             //Atribui os valores ao html do boleto bancário
-            return MontaHtml(urlImagemLogo, urlImagemBarra, "<img src=\"data:image/jpg;base64," + GetCodBarraCode(Boleto.CodigoBarra.CodigoDeBarras) + "\" alt=\"Código de Barras\" />");
+            return MontaHtml(urlImagemLogo, urlImagemBarra,
+                "<img src=\"data:image/jpg;base64," + GetCodBarraCode(Boleto.CodigoBarra.CodigoDeBarras) +
+                "\" alt=\"Código de Barras\" />");
         }
 
         #endregion Override
 
         #region Html
+
         public string GeraHtmlInstrucoes()
         {
             try
@@ -133,7 +159,8 @@ namespace BoletoNetCore
                 var html = new StringBuilder();
 
                 var titulo = "Instruções de Impressão";
-                var instrucoes = "Imprimir em impressora jato de tinta (ink jet) ou laser em qualidade normal. (Não use modo econômico).<br>Utilize folha A4 (210 x 297 mm) ou Carta (216 x 279 mm) - Corte na linha indicada<br>";
+                var instrucoes =
+                    "Imprimir em impressora jato de tinta (ink jet) ou laser em qualidade normal. (Não use modo econômico).<br>Utilize folha A4 (210 x 297 mm) ou Carta (216 x 279 mm) - Corte na linha indicada<br>";
 
                 var htmlInstrucao = GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.Instrucoes.html");
                 html.Append(htmlInstrucao); //HTML.instrucoes
@@ -180,9 +207,7 @@ namespace BoletoNetCore
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboPagadorParte2.html"));
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboPagadorParte3.html"));
                 if (MostrarEnderecoBeneficiario)
-                {
                     html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboPagadorParte10.html"));
-                }
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboPagadorParte4.html"));
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboPagadorParte5.html"));
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboPagadorParte6.html"));
@@ -234,14 +259,17 @@ namespace BoletoNetCore
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ComprovanteEntrega5.html"));
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ComprovanteEntrega6.html"));
 
-                html.Append(MostrarComprovanteEntregaLivre ? GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ComprovanteEntrega71.html") : GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ComprovanteEntrega7.html"));
+                html.Append(MostrarComprovanteEntregaLivre
+                    ? GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ComprovanteEntrega71.html")
+                    : GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ComprovanteEntrega7.html"));
 
                 html.Append("<br />");
                 return html.ToString();
             }
         }
 
-        private string MontaHtml(string urlImagemLogo, string urlImagemBarra, string imagemCodigoBarras, string pixStr = null)
+        private string MontaHtml(string urlImagemLogo, string urlImagemBarra, string imagemCodigoBarras,
+            string pixStr = null)
         {
             var html = new StringBuilder();
             var enderecoBeneficiario = "";
@@ -251,17 +279,17 @@ namespace BoletoNetCore
             if (!OcultarInstrucoes)
                 html.Append(GeraHtmlInstrucoes());
 
-            if (!string.IsNullOrWhiteSpace(pixStr))
-            {
-                html.Append(GeraHtmlPix(pixStr));
-            }
+            if (!string.IsNullOrWhiteSpace(pixStr)) html.Append(GeraHtmlPix(pixStr));
 
             if (ExibirDemonstrativo && Boleto.Demonstrativos.Any())
             {
-                html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboBeneficiarioRelatorioValores.html"));
+                html.Append(
+                    GetResourceHypertext(
+                        "BoletoNetCore.BoletoImpressao.Parts.ReciboBeneficiarioRelatorioValores.html"));
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboBeneficiarioParte5.html"));
 
-                html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.CabecalhoTabelaDemonstrativo.html"));
+                html.Append(
+                    GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.CabecalhoTabelaDemonstrativo.html"));
 
                 var grupoDemonstrativo = new StringBuilder();
 
@@ -271,7 +299,8 @@ namespace BoletoNetCore
 
                     foreach (var item in relatorio.Itens)
                     {
-                        grupoDemonstrativo.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.GrupoDemonstrativo.html"));
+                        grupoDemonstrativo.Append(
+                            GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.GrupoDemonstrativo.html"));
 
                         if (first)
                         {
@@ -286,10 +315,12 @@ namespace BoletoNetCore
 
                         grupoDemonstrativo = grupoDemonstrativo.Replace("@DESCRICAOITEM", item.Descricao);
                         grupoDemonstrativo = grupoDemonstrativo.Replace("@REFERENCIAITEM", item.Referencia);
-                        grupoDemonstrativo = grupoDemonstrativo.Replace("@VALORITEM", item.Valor.ToString("R$ ##,##0.00"));
+                        grupoDemonstrativo =
+                            grupoDemonstrativo.Replace("@VALORITEM", item.Valor.ToString("R$ ##,##0.00"));
                     }
 
-                    grupoDemonstrativo.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.TotalDemonstrativo.html"));
+                    grupoDemonstrativo.Append(
+                        GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.TotalDemonstrativo.html"));
                     grupoDemonstrativo = grupoDemonstrativo.Replace(
                         "@VALORTOTALGRUPO",
                         relatorio.Itens.Sum(c => c.Valor).ToString("R$ ##,##0.00"));
@@ -306,7 +337,8 @@ namespace BoletoNetCore
                     html.Append(HtmlComprovanteEntrega);
                     //Html da linha pontilhada
                     if (OcultarReciboPagador)
-                        html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboPagadorParte8.html"));
+                        html.Append(
+                            GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboPagadorParte8.html"));
                 }
 
                 //Oculta o recibo do sacabo do boleto
@@ -321,14 +353,14 @@ namespace BoletoNetCore
                             throw new ArgumentNullException("Endereço do Beneficiário");
 
                         enderecoBeneficiario = string.Format("{0} - {1} - {2}/{3} - CEP: {4}",
-                                                            Boleto.Banco.Beneficiario.Endereco.FormataLogradouro(0),
-                                                            Boleto.Banco.Beneficiario.Endereco.Bairro,
-                                                            Boleto.Banco.Beneficiario.Endereco.Cidade,
-                                                            Boleto.Banco.Beneficiario.Endereco.UF,
-                                                            Utils.FormataCEP(Boleto.Banco.Beneficiario.Endereco.CEP));
+                            Boleto.Banco.Beneficiario.Endereco.FormataLogradouro(0),
+                            Boleto.Banco.Beneficiario.Endereco.Bairro,
+                            Boleto.Banco.Beneficiario.Endereco.Cidade,
+                            Boleto.Banco.Beneficiario.Endereco.UF,
+                            Utils.FormataCEP(Boleto.Banco.Beneficiario.Endereco.CEP));
                         enderecoBeneficiarioCompacto = string.Format("{0} - CEP: {1}",
-                                                            Boleto.Banco.Beneficiario.Endereco.FormataLogradouro(25),
-                                                            Utils.FormataCEP(Boleto.Banco.Beneficiario.Endereco.CEP));
+                            Boleto.Banco.Beneficiario.Endereco.FormataLogradouro(25),
+                            Utils.FormataCEP(Boleto.Banco.Beneficiario.Endereco.CEP));
                     }
                 }
             }
@@ -344,14 +376,17 @@ namespace BoletoNetCore
                     pagador += string.Format(" - CNPJ: " + Utils.FormataCNPJ(Boleto.Pagador.CPFCNPJ));
                     break;
             }
+
             if (Boleto.Pagador.Observacoes != string.Empty)
                 pagador += " - " + Boleto.Pagador.Observacoes;
 
             var enderecoPagador = string.Empty;
             if (!OcultarEnderecoPagador)
             {
-                enderecoPagador = Boleto.Pagador.Endereco.FormataLogradouro(0) + "<br />" + string.Format("{0} - {1}/{2}", Boleto.Pagador.Endereco.Bairro, Boleto.Pagador.Endereco.Cidade, Boleto.Pagador.Endereco.UF);
-                if (Boleto.Pagador.Endereco.CEP != String.Empty)
+                enderecoPagador = Boleto.Pagador.Endereco.FormataLogradouro(0) + "<br />" +
+                                  string.Format("{0} - {1}/{2}", Boleto.Pagador.Endereco.Bairro,
+                                      Boleto.Pagador.Endereco.Cidade, Boleto.Pagador.Endereco.UF);
+                if (Boleto.Pagador.Endereco.CEP != string.Empty)
                     enderecoPagador += string.Format(" - CEP: {0}", Utils.FormataCEP(Boleto.Pagador.Endereco.CEP));
             }
 
@@ -369,6 +404,7 @@ namespace BoletoNetCore
                         avalista += string.Format(" - CNPJ: " + Utils.FormataCNPJ(Boleto.Avalista.CPFCNPJ));
                         break;
                 }
+
                 if (Boleto.Avalista.Observacoes != string.Empty)
                     avalista += " - " + Boleto.Avalista.Observacoes;
             }
@@ -377,21 +413,19 @@ namespace BoletoNetCore
             if (!FormatoCarne)
                 html.Append(GeraHtmlReciboBeneficiario());
             else
-            {
                 html.Append(GeraHtmlCarne("", GeraHtmlReciboBeneficiario()));
-            }
 
             var dataVencimento = Boleto.DataVencimento.ToString("dd/MM/yyyy");
 
             if (MostrarContraApresentacaoNaDataVencimento)
                 dataVencimento = "Contra Apresentação";
 
-            if (String.IsNullOrWhiteSpace(_vLocalLogoBeneficiario))
+            if (string.IsNullOrWhiteSpace(_vLocalLogoBeneficiario))
                 _vLocalLogoBeneficiario = urlImagemLogo;
 
             return html
                 .Replace("@CODIGOBANCO", Utils.FormatCode(Boleto.Banco.Codigo.ToString(), 3))
-                .Replace("@DIGITOBANCO", Boleto.Banco.Digito.ToString())
+                .Replace("@DIGITOBANCO", Boleto.Banco.Digito)
                 .Replace("@URLIMAGEMLOGO", urlImagemLogo)
                 .Replace("@URLIMGBENEFICIARIO", _vLocalLogoBeneficiario)
                 .Replace("@URLIMAGEMBARRA", urlImagemBarra)
@@ -400,7 +434,11 @@ namespace BoletoNetCore
                 .Replace("@MENSAGEMFIXATOPOBOLETO", Boleto.Banco.Beneficiario.ContaBancaria.MensagemFixaTopoBoleto)
                 .Replace("@MENSAGEMFIXAPAGADOR", Boleto.Banco.Beneficiario.ContaBancaria.MensagemFixaPagador)
                 .Replace("@DATAVENCIMENTO", dataVencimento)
-                .Replace("@BENEFICIARIO_BOLETO", !Boleto.Banco.Beneficiario.MostrarCNPJnoBoleto ? Boleto.Banco.Beneficiario.Nome : string.Format("{0} - {1}", Boleto.Banco.Beneficiario.Nome, Utils.FormataCNPJ(Boleto.Banco.Beneficiario.CPFCNPJ)))
+                .Replace("@BENEFICIARIO_BOLETO",
+                    !Boleto.Banco.Beneficiario.MostrarCNPJnoBoleto
+                        ? Boleto.Banco.Beneficiario.Nome
+                        : string.Format("{0} - {1}", Boleto.Banco.Beneficiario.Nome,
+                            Utils.FormataCNPJ(Boleto.Banco.Beneficiario.CPFCNPJ)))
                 .Replace("@BENEFICIARIO", Boleto.Banco.Beneficiario.Nome)
                 .Replace("@DATADOCUMENTO", Boleto.DataEmissao.ToString("dd/MM/yyyy"))
                 .Replace("@NUMERODOCUMENTO", Boleto.NumeroDocumento)
@@ -409,14 +447,29 @@ namespace BoletoNetCore
                 .Replace("@NOSSONUMERO", Boleto.NossoNumeroFormatado)
                 .Replace("@CARTEIRA", Boleto.CarteiraImpressaoBoleto)
                 .Replace("@ESPECIE", Boleto.EspecieMoeda)
-                .Replace("@QUANTIDADE", (Boleto.QuantidadeMoeda == 0 ? "" : Boleto.QuantidadeMoeda.ToString()))
+                .Replace("@QUANTIDADE", Boleto.QuantidadeMoeda == 0 ? "" : Boleto.QuantidadeMoeda.ToString())
                 .Replace("@VALORDOCUMENTO", Boleto.ValorMoeda)
-                .Replace("@=VALORDOCUMENTO", (Boleto.ValorTitulo == 0 ? "" : Boleto.ValorTitulo.ToString("R$ ##,##0.00")))
-                .Replace("@DESCONTOS", (Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorDesconto == 0 ? "" : Boleto.ValorDesconto.ToString("R$ ##,##0.00")))
-                .Replace("@OUTRASDEDUCOES", (Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorAbatimento == 0 ? "" : Boleto.ValorAbatimento.ToString("R$ ##,##0.00")))
-                .Replace("@MORAMULTA", (Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorMulta == 0 ? "" : Boleto.ValorMulta.ToString("R$ ##,##0.00")))
-                .Replace("@OUTROSACRESCIMOS", (Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorOutrasDespesas == 0 ? "" : Boleto.ValorOutrasDespesas.ToString("R$ ##,##0.00")))
-                .Replace("@VALORCOBRADO", (Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorPago == 0 ? "" : Boleto.ValorPago.ToString("R$ ##,##0.00")))
+                .Replace("@=VALORDOCUMENTO", Boleto.ValorTitulo == 0 ? "" : Boleto.ValorTitulo.ToString("R$ ##,##0.00"))
+                .Replace("@DESCONTOS",
+                    Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorDesconto == 0
+                        ? ""
+                        : Boleto.ValorDesconto.ToString("R$ ##,##0.00"))
+                .Replace("@OUTRASDEDUCOES",
+                    Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorAbatimento == 0
+                        ? ""
+                        : Boleto.ValorAbatimento.ToString("R$ ##,##0.00"))
+                .Replace("@MORAMULTA",
+                    Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorMulta == 0
+                        ? ""
+                        : Boleto.ValorMulta.ToString("R$ ##,##0.00"))
+                .Replace("@OUTROSACRESCIMOS",
+                    Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorOutrasDespesas == 0
+                        ? ""
+                        : Boleto.ValorOutrasDespesas.ToString("R$ ##,##0.00"))
+                .Replace("@VALORCOBRADO",
+                    Boleto.ImprimirValoresAuxiliares == false || Boleto.ValorPago == 0
+                        ? ""
+                        : Boleto.ValorPago.ToString("R$ ##,##0.00"))
                 .Replace("@AGENCIACONTA", Boleto.Banco.Beneficiario.CodigoFormatado)
                 .Replace("@PAGADOR", pagador)
                 .Replace("@ENDERECOPAGADOR", enderecoPagador)
@@ -427,10 +480,12 @@ namespace BoletoNetCore
                 .Replace("@USODOBANCO", Boleto.UsoBanco)
                 .Replace("@IMAGEMCODIGOBARRA", imagemCodigoBarras)
                 .Replace("@ACEITE", Boleto.Aceite).ToString()
-                .Replace("@ENDERECOBENEFICIARIO_BOLETO", MostrarEnderecoBeneficiario ? string.Format(" - {0}", enderecoBeneficiarioCompacto) : "")
+                .Replace("@ENDERECOBENEFICIARIO_BOLETO",
+                    MostrarEnderecoBeneficiario ? string.Format(" - {0}", enderecoBeneficiarioCompacto) : "")
                 .Replace("@ENDERECOBENEFICIARIO", MostrarEnderecoBeneficiario ? enderecoBeneficiario : "")
                 .Replace("@INSTRUCOES", Boleto.MensagemInstrucoesCaixaFormatado.Replace(Environment.NewLine, "<br/>"))
-                .Replace("@PARCELAS", Boleto.ParcelaInformativo != string.Empty ? ("Parcela: " + Boleto.ParcelaInformativo) : "");
+                .Replace("@PARCELAS",
+                    Boleto.ParcelaInformativo != string.Empty ? "Parcela: " + Boleto.ParcelaInformativo : "");
         }
 
         #endregion Html
@@ -438,37 +493,36 @@ namespace BoletoNetCore
         #region Geração do Html OffLine
 
         /// <summary>
-        /// Função utilizada para gerar o html do boleto sem que o mesmo esteja dentro de uma página Web.
+        ///     Função utilizada para gerar o html do boleto sem que o mesmo esteja dentro de uma página Web.
         /// </summary>
         /// <param name="srcLogo">Local apontado pela imagem de logo.</param>
         /// <param name="srcBarra">Local apontado pela imagem de barra.</param>
         /// <param name="srcCodigoBarra">Local apontado pela imagem do código de barras.</param>
         /// <returns>StringBuilder conténdo o código html do boleto bancário.</returns>
-        protected StringBuilder HtmlOffLine(string textoNoComecoDoEmail, string srcLogo, string srcBarra, string srcCodigoBarra, bool usaCsspdf = false, string pixStr = null)
-        {//protected StringBuilder HtmlOffLine(string srcCorte, string srcLogo, string srcBarra, string srcPonto, string srcBarraInterna, string srcCodigoBarra)
+        protected StringBuilder HtmlOffLine(string textoNoComecoDoEmail, string srcLogo, string srcBarra,
+            string srcCodigoBarra, bool usaCsspdf = false, string pixStr = null)
+        {
+            //protected StringBuilder HtmlOffLine(string srcCorte, string srcLogo, string srcBarra, string srcPonto, string srcBarraInterna, string srcCodigoBarra)
             //OnLoad(EventArgs.Empty);
 
             var html = new StringBuilder();
             HtmlOfflineHeader(html, usaCsspdf);
-            if (!string.IsNullOrEmpty(textoNoComecoDoEmail))
-            {
-                html.Append(textoNoComecoDoEmail);
-            }
-            html.Append(MontaHtml(srcLogo, srcBarra, "<img src=\"" + srcCodigoBarra + "\" alt=\"Código de Barras\" />", pixStr));
+            if (!string.IsNullOrEmpty(textoNoComecoDoEmail)) html.Append(textoNoComecoDoEmail);
+            html.Append(MontaHtml(srcLogo, srcBarra, "<img src=\"" + srcCodigoBarra + "\" alt=\"Código de Barras\" />",
+                pixStr));
             HtmlOfflineFooter(html);
             return html;
         }
 
 
-
-
         /// <summary>
-        /// Monta o Header de um email com pelo menos um boleto dentro.
+        ///     Monta o Header de um email com pelo menos um boleto dentro.
         /// </summary>
         /// <param name="saida">StringBuilder onde o conteudo sera salvo.</param>
         protected static void HtmlOfflineHeader(StringBuilder html, bool usaCsspdf = false)
         {
-            html.Append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n");
+            html.Append(
+                "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n");
             html.Append("<html xmlns=\"http://www.w3.org/1999/xhtml\">\n");
             html.Append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n");
             html.Append("<meta charset=\"utf-8\"/>\n");
@@ -476,8 +530,11 @@ namespace BoletoNetCore
             html.Append("    <title>Boleto.Net</title>\n");
 
             #region Css
+
             {
-                var arquivoCss = usaCsspdf ? "BoletoNetCore.BoletoImpressao.BoletoNetPDF.css" : "BoletoNetCore.BoletoImpressao.BoletoNet.css";
+                var arquivoCss = usaCsspdf
+                    ? "BoletoNetCore.BoletoImpressao.BoletoNetPDF.css"
+                    : "BoletoNetCore.BoletoImpressao.BoletoNet.css";
                 var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(arquivoCss);
 
                 using (var sr = new StreamReader(stream))
@@ -489,6 +546,7 @@ namespace BoletoNetCore
                     sr.Dispose();
                 }
             }
+
             #endregion Css
 
             html.Append("     </head>\n");
@@ -497,7 +555,7 @@ namespace BoletoNetCore
 
 
         /// <summary>
-        /// Monta o Footer de um email com pelo menos um boleto dentro.
+        ///     Monta o Footer de um email com pelo menos um boleto dentro.
         /// </summary>
         /// <param name="saida">StringBuilder onde o conteudo sera salvo.</param>
         protected static void HtmlOfflineFooter(StringBuilder saida)
@@ -508,7 +566,7 @@ namespace BoletoNetCore
 
 
         /// <summary>
-        /// Junta varios boletos em uma unica AlternateView, para todos serem mandados juntos no mesmo email
+        ///     Junta varios boletos em uma unica AlternateView, para todos serem mandados juntos no mesmo email
         /// </summary>
         /// <param name="arrayDeBoletos">Array contendo os boletos a serem mesclados</param>
         /// <returns></returns>
@@ -518,23 +576,20 @@ namespace BoletoNetCore
         }
 
         /// <summary>
-        /// Junta varios boletos em uma unica AlternateView, para todos serem mandados juntos no mesmo email
+        ///     Junta varios boletos em uma unica AlternateView, para todos serem mandados juntos no mesmo email
         /// </summary>
         /// <param name="textoNoComecoDoEmail">Texto em HTML a ser adicionado no comeco do email</param>
         /// <param name="arrayDeBoletos">Array contendo os boletos a serem mesclados</param>
         /// <returns>AlternateView com os dados de todos os boleto.</returns>
-        public static AlternateView GeraHtmlDeVariosBoletosParaEmail(string textoNoComecoDoEmail, BoletoBancario[] arrayDeBoletos)
+        public static AlternateView GeraHtmlDeVariosBoletosParaEmail(string textoNoComecoDoEmail,
+            BoletoBancario[] arrayDeBoletos)
         {
             var corpoDoEmail = new StringBuilder();
 
             var linkedResources = new List<LinkedResource>();
             HtmlOfflineHeader(corpoDoEmail);
-            if (textoNoComecoDoEmail != null && textoNoComecoDoEmail != "")
-            {
-                corpoDoEmail.Append(textoNoComecoDoEmail);
-            }
+            if (textoNoComecoDoEmail != null && textoNoComecoDoEmail != "") corpoDoEmail.Append(textoNoComecoDoEmail);
             foreach (var umBoleto in arrayDeBoletos)
-            {
                 if (umBoleto != null)
                 {
                     LinkedResource lrImagemLogo;
@@ -552,17 +607,13 @@ namespace BoletoNetCore
                     linkedResources.Add(lrImagemBarra);
                     linkedResources.Add(lrImagemCodigoBarra);
                 }
-            }
+
             HtmlOfflineFooter(corpoDoEmail);
 
 
-
-            var av = AlternateView.CreateAlternateViewFromString(corpoDoEmail.ToString(), Encoding.Default, "text/html");
-            foreach (var theResource in linkedResources)
-            {
-                av.LinkedResources.Add(theResource);
-            }
-
+            var av = AlternateView.CreateAlternateViewFromString(corpoDoEmail.ToString(), Encoding.Default,
+                "text/html");
+            foreach (var theResource in linkedResources) av.LinkedResources.Add(theResource);
 
 
             return av;
@@ -570,7 +621,7 @@ namespace BoletoNetCore
 
 
         /// <summary>
-        /// Função utilizada gerar o AlternateView necessário para enviar um boleto bancário por e-mail.
+        ///     Função utilizada gerar o AlternateView necessário para enviar um boleto bancário por e-mail.
         /// </summary>
         /// <returns>AlternateView com os dados do boleto.</returns>
         public AlternateView HtmlBoletoParaEnvioEmail()
@@ -580,7 +631,7 @@ namespace BoletoNetCore
 
 
         /// <summary>
-        /// Função utilizada gerar o AlternateView necessário para enviar um boleto bancário por e-mail.
+        ///     Função utilizada gerar o AlternateView necessário para enviar um boleto bancário por e-mail.
         /// </summary>
         /// <param name="textoNoComecoDoEmail">Texto (em HTML) a ser incluido no começo do Email.</param>
         /// <returns>AlternateView com os dados do boleto.</returns>
@@ -591,7 +642,8 @@ namespace BoletoNetCore
             LinkedResource lrImagemCodigoBarra;
 
             GeraGraficosParaEmailOffLine(out lrImagemLogo, out lrImagemBarra, out lrImagemCodigoBarra);
-            var html = HtmlOffLine(textoNoComecoDoEmail, "cid:" + lrImagemLogo.ContentId, "cid:" + lrImagemBarra.ContentId, "cid:" + lrImagemCodigoBarra.ContentId);
+            var html = HtmlOffLine(textoNoComecoDoEmail, "cid:" + lrImagemLogo.ContentId,
+                "cid:" + lrImagemBarra.ContentId, "cid:" + lrImagemCodigoBarra.ContentId);
 
             var av = AlternateView.CreateAlternateViewFromString(html.ToString(), Encoding.Default, "text/html");
 
@@ -602,18 +654,21 @@ namespace BoletoNetCore
         }
 
         /// <summary>
-        /// Gera as tres imagens necessárias para o Boleto
+        ///     Gera as tres imagens necessárias para o Boleto
         /// </summary>
         /// <param name="lrImagemLogo">O Logo do Banco</param>
         /// <param name="lrImagemBarra">A Barra Horizontal</param>
         /// <param name="lrImagemCodigoBarra">O Código de Barras</param>
-        void GeraGraficosParaEmailOffLine(out LinkedResource lrImagemLogo, out LinkedResource lrImagemBarra, out LinkedResource lrImagemCodigoBarra)
+        private void GeraGraficosParaEmailOffLine(out LinkedResource lrImagemLogo, out LinkedResource lrImagemBarra,
+            out LinkedResource lrImagemCodigoBarra)
         {
             //OnLoad(EventArgs.Empty);
 
-            var randomSufix = new Random().Next().ToString(); // para podermos colocar no mesmo email varios boletos diferentes
+            var randomSufix =
+                new Random().Next().ToString(); // para podermos colocar no mesmo email varios boletos diferentes
 
-            var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("BoletoNetCore.Imagens." + Utils.FormatCode(Boleto.Banco.Codigo.ToString(), 3) + ".jpg");
+            var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("BoletoNetCore.Imagens." +
+                Utils.FormatCode(Boleto.Banco.Codigo.ToString(), 3) + ".jpg");
             lrImagemLogo = new LinkedResource(stream, MediaTypeNames.Image.Jpeg)
             {
                 ContentId = "logo" + randomSufix
@@ -626,14 +681,14 @@ namespace BoletoNetCore
                 ContentId = "barra" + randomSufix
             };
 
-            var cb = new BarCode2of5i(Boleto.CodigoBarra.CodigoDeBarras, 1, 50, Boleto.CodigoBarra.CodigoDeBarras.Length);
+            var cb = new BarCode2of5i(Boleto.CodigoBarra.CodigoDeBarras, 1, 50,
+                Boleto.CodigoBarra.CodigoDeBarras.Length);
             ms = new MemoryStream(Utils.ConvertImageToByte(cb.ToBitmap()));
 
             lrImagemCodigoBarra = new LinkedResource(ms, MediaTypeNames.Image.Gif)
             {
                 ContentId = "codigobarra" + randomSufix
             };
-
         }
 
 
@@ -824,10 +879,9 @@ namespace BoletoNetCore
         //}
 
         /// <summary>
-        /// Monta o Html do boleto bancário com as imagens embutidas no conteúdo, sem necessidade de links externos
-        /// de acordo com o padrão http://en.wikipedia.org/wiki/Data_URI_scheme
-        /// 
-        /// Alterado por Olavo Rocha @ Exodus para utilizar arquivos dentro da própria DLL para .net core 2.2
+        ///     Monta o Html do boleto bancário com as imagens embutidas no conteúdo, sem necessidade de links externos
+        ///     de acordo com o padrão http://en.wikipedia.org/wiki/Data_URI_scheme
+        ///     Alterado por Olavo Rocha @ Exodus para utilizar arquivos dentro da própria DLL para .net core 2.2
         /// </summary>
         /// <param name="convertLinhaDigitavelToImage">Converte a Linha Digitável para imagem, com o objetivo de evitar malwares.</param>
         /// <param name="urlImagemLogoBeneficiario">Url/Imagem Base64 da Logo do Beneficiário</param>
@@ -835,70 +889,51 @@ namespace BoletoNetCore
         /// <desenvolvedor>Iuri André Stona, Olavo Rocha Neto</desenvolvedor>
         /// <criacao>23/01/2014</criacao>
         /// <alteracao>07/07/2019</alteracao>
-        public string MontaHtmlEmbedded(bool convertLinhaDigitavelToImage = false, bool usaCsspdf = false, string urlImagemLogoBeneficiario = null, string pixString = null)
+        public string MontaHtmlEmbedded(bool convertLinhaDigitavelToImage = false, bool usaCsspdf = false,
+            string urlImagemLogoBeneficiario = null, string pixString = null)
         {
             //OnLoad(EventArgs.Empty);
 
             var assembly = Assembly.GetExecutingAssembly();
 
-            var streamLogo = assembly.GetManifestResourceStream("BoletoNetCore.Imagens." + Boleto.Banco.Codigo.ToString("000") + ".jpg");
-            var base64Logo = Convert.ToBase64String(new BinaryReader(streamLogo).ReadBytes((int)streamLogo.Length));
+            var streamLogo =
+                assembly.GetManifestResourceStream("BoletoNetCore.Imagens." + Boleto.Banco.Codigo.ToString("000") +
+                                                   ".jpg");
+            var base64Logo = Convert.ToBase64String(new BinaryReader(streamLogo).ReadBytes((int) streamLogo.Length));
             var fnLogo = string.Format("data:image/jpg;base64,{0}", base64Logo);
 
             var streamBarra = assembly.GetManifestResourceStream("BoletoNetCore.Imagens.barra.jpg");
-            var base64Barra = Convert.ToBase64String(new BinaryReader(streamBarra).ReadBytes((int)streamBarra.Length));
+            var base64Barra = Convert.ToBase64String(new BinaryReader(streamBarra).ReadBytes((int) streamBarra.Length));
             var fnBarra = string.Format("data:image/jpg;base64,{0}", base64Barra);
 
-            var cb = new BarCode2of5i(Boleto.CodigoBarra.CodigoDeBarras, 1, 50, Boleto.CodigoBarra.CodigoDeBarras.Length);
+            var cb = new BarCode2of5i(Boleto.CodigoBarra.CodigoDeBarras, 1, 50,
+                Boleto.CodigoBarra.CodigoDeBarras.Length);
             var base64CodigoBarras = Convert.ToBase64String(cb.ToByte());
             var fnCodigoBarras = string.Format("data:image/gif;base64,{0}", base64CodigoBarras);
 
             if (convertLinhaDigitavelToImage)
             {
-
                 var linhaDigitavel = Boleto.CodigoBarra.LinhaDigitavel.Replace("  ", " ").Trim();
 
-                var imagemLinha = Utils.DrawText(linhaDigitavel, new Font("Arial", 30, FontStyle.Bold), Color.Black, Color.White);
+                var imagemLinha = Utils.DrawText(linhaDigitavel, new Font("Arial", 30, FontStyle.Bold), Color.Black,
+                    Color.White);
                 var base64Linha = Convert.ToBase64String(Utils.ConvertImageToByte(imagemLinha));
 
                 var fnLinha = string.Format("data:image/gif;base64,{0}", base64Linha);
 
-                Boleto.CodigoBarra.LinhaDigitavel = @"<img style=""max-width:420px; margin-bottom: 2px"" src=" + fnLinha + " />";
+                Boleto.CodigoBarra.LinhaDigitavel =
+                    @"<img style=""max-width:420px; margin-bottom: 2px"" src=" + fnLinha + " />";
             }
 
-            if (!string.IsNullOrEmpty(urlImagemLogoBeneficiario))
-            {
-                _vLocalLogoBeneficiario = urlImagemLogoBeneficiario;
-            }
+            if (!string.IsNullOrEmpty(urlImagemLogoBeneficiario)) _vLocalLogoBeneficiario = urlImagemLogoBeneficiario;
 
             var s = HtmlOffLine(null, fnLogo, fnBarra, fnCodigoBarras, usaCsspdf, pixString).ToString();
 
-            if (convertLinhaDigitavelToImage)
-            {
-                s = s.Replace(".w500", "");
-            }
+            if (convertLinhaDigitavelToImage) s = s.Replace(".w500", "");
 
             return s;
         }
 
-
         #endregion Geração do Html OffLine
-
-        public Image GeraImagemCodigoBarras(Boleto boleto)
-        {
-            var cb = new BarCode2of5i(boleto.CodigoBarra.CodigoDeBarras, 1, 50, boleto.CodigoBarra.CodigoDeBarras.Length);
-            return cb.ToBitmap();
-        }
-
-        private void CopiarStream(Stream entrada, Stream saida)
-        {
-            var bytesLidos = 0;
-            var imgBuffer = new byte[entrada.Length];
-
-            while ((bytesLidos = entrada.Read(imgBuffer, 0, imgBuffer.Length)) > 0)
-            {
-                saida.Write(imgBuffer, 0, bytesLidos);
-            }
-        }
     }
 }

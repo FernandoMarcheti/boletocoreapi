@@ -1,15 +1,17 @@
 using System;
-using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Util
 {
-    static class Utils
+    internal static class Utils
     {
-        internal static string FormatCode(string text, int length) => text.PadLeft(length, '0');
+        internal static string FormatCode(string text, int length)
+        {
+            return text.PadLeft(length, '0');
+        }
 
         internal static bool ToBool(object value)
         {
@@ -83,7 +85,7 @@ namespace BoletoNetCore
         }
 
         /// <summary>
-        /// Formata o CPF ou CNPJ do Beneficiario ou do Pagador no formato: 000.000.000-00, 00.000.000/0001-00 respectivamente.
+        ///     Formata o CPF ou CNPJ do Beneficiario ou do Pagador no formato: 000.000.000-00, 00.000.000/0001-00 respectivamente.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
@@ -94,13 +96,13 @@ namespace BoletoNetCore
             if (value.Trim().Length == 14)
                 return FormataCNPJ(value);
 
-            throw new Exception($"O CPF ou CNPJ: {value} È inv·lido.");
+            throw new Exception($"O CPF ou CNPJ: {value} √© inv√°lido.");
         }
 
         /// <summary>
-        /// Formata o n˙mero do CPF 92074286520 para 920.742.865-20
+        ///     Formata o n√∫mero do CPF 92074286520 para 920.742.865-20
         /// </summary>
-        /// <param name="cpf">Sequencia numÈrica de 11 dÌgitos. Exemplo: 00000000000</param>
+        /// <param name="cpf">Sequencia num√©rica de 11 d√≠gitos. Exemplo: 00000000000</param>
         /// <returns>CPF formatado</returns>
         internal static string FormataCPF(string cpf)
         {
@@ -115,15 +117,16 @@ namespace BoletoNetCore
         }
 
         /// <summary>
-        /// Formata o CNPJ. Exemplo 00.316.449/0001-63
+        ///     Formata o CNPJ. Exemplo 00.316.449/0001-63
         /// </summary>
-        /// <param name="cnpj">Sequencia numÈrica de 14 dÌgitos. Exemplo: 00000000000000</param>
+        /// <param name="cnpj">Sequencia num√©rica de 14 d√≠gitos. Exemplo: 00000000000000</param>
         /// <returns>CNPJ formatado</returns>
         internal static string FormataCNPJ(string cnpj)
         {
             try
             {
-                return $"{cnpj.Substring(0, 2)}.{cnpj.Substring(2, 3)}.{cnpj.Substring(5, 3)}/{cnpj.Substring(8, 4)}-{cnpj.Substring(12, 2)}";
+                return
+                    $"{cnpj.Substring(0, 2)}.{cnpj.Substring(2, 3)}.{cnpj.Substring(5, 3)}/{cnpj.Substring(8, 4)}-{cnpj.Substring(12, 2)}";
             }
             catch
             {
@@ -132,9 +135,9 @@ namespace BoletoNetCore
         }
 
         /// <summary>
-        /// Formato o CEP em 00000-000
+        ///     Formato o CEP em 00000-000
         /// </summary>
-        /// <param name="cep">Sequencia numÈrica de 8 dÌgitos. Exemplo: 00000000</param>
+        /// <param name="cep">Sequencia num√©rica de 8 d√≠gitos. Exemplo: 00000000</param>
         /// <returns>CEP formatado</returns>
         internal static string FormataCEP(string cep)
         {
@@ -149,95 +152,93 @@ namespace BoletoNetCore
         }
 
         /// <summary>
-        /// Formata o campo de acordo com o tipo e o tamanho 
-        /// </summary>        
+        ///     Formata o campo de acordo com o tipo e o tamanho
+        /// </summary>
         public static string FitStringLength(this string sringToBeFit, int maxLength, char fitChar)
-            => sringToBeFit.Length > maxLength ? sringToBeFit.Substring(0, maxLength) : sringToBeFit.PadLeft(maxLength, fitChar);
+        {
+            return sringToBeFit.Length > maxLength
+                ? sringToBeFit.Substring(0, maxLength)
+                : sringToBeFit.PadLeft(maxLength, fitChar);
+        }
 
         public static string SubstituiCaracteresEspeciais(string strline)
         {
             try
             {
-                strline = strline.Replace("„", "a");
-                strline = strline.Replace('√', 'A');
-                strline = strline.Replace('‚', 'a');
-                strline = strline.Replace('¬', 'A');
-                strline = strline.Replace('·', 'a');
-                strline = strline.Replace('¡', 'A');
-                strline = strline.Replace('‡', 'a');
-                strline = strline.Replace('¿', 'A');
-                strline = strline.Replace('Á', 'c');
-                strline = strline.Replace('«', 'C');
-                strline = strline.Replace('È', 'e');
-                strline = strline.Replace('…', 'E');
-                strline = strline.Replace(' ', 'E');
-                strline = strline.Replace('Í', 'e');
-                strline = strline.Replace('ı', 'o');
-                strline = strline.Replace('’', 'O');
-                strline = strline.Replace('Û', 'o');
-                strline = strline.Replace('”', 'O');
-                strline = strline.Replace('Ù', 'o');
-                strline = strline.Replace('‘', 'O');
-                strline = strline.Replace('˙', 'u');
-                strline = strline.Replace('⁄', 'U');
-                strline = strline.Replace('¸', 'u');
-                strline = strline.Replace('‹', 'U');
-                strline = strline.Replace('Ì', 'i');
-                strline = strline.Replace('Õ', 'I');
-                strline = strline.Replace('™', 'a');
-                strline = strline.Replace('∫', 'o');
-                strline = strline.Replace('∞', 'o');
+                strline = strline.Replace("√£", "a");
+                strline = strline.Replace('√É', 'A');
+                strline = strline.Replace('√¢', 'a');
+                strline = strline.Replace('√Ç', 'A');
+                strline = strline.Replace('√°', 'a');
+                strline = strline.Replace('√Å', 'A');
+                strline = strline.Replace('√†', 'a');
+                strline = strline.Replace('√Ä', 'A');
+                strline = strline.Replace('√ß', 'c');
+                strline = strline.Replace('√á', 'C');
+                strline = strline.Replace('√©', 'e');
+                strline = strline.Replace('√â', 'E');
+                strline = strline.Replace('√ä', 'E');
+                strline = strline.Replace('√™', 'e');
+                strline = strline.Replace('√µ', 'o');
+                strline = strline.Replace('√ï', 'O');
+                strline = strline.Replace('√≥', 'o');
+                strline = strline.Replace('√ì', 'O');
+                strline = strline.Replace('√¥', 'o');
+                strline = strline.Replace('√î', 'O');
+                strline = strline.Replace('√∫', 'u');
+                strline = strline.Replace('√ö', 'U');
+                strline = strline.Replace('√º', 'u');
+                strline = strline.Replace('√ú', 'U');
+                strline = strline.Replace('√≠', 'i');
+                strline = strline.Replace('√ç', 'I');
+                strline = strline.Replace('¬™', 'a');
+                strline = strline.Replace('¬∫', 'o');
+                strline = strline.Replace('¬∞', 'o');
                 strline = strline.Replace('&', 'e');
                 return strline;
             }
             catch (Exception ex)
             {
-                Exception tmpEx = new Exception("Erro ao formatar string.", ex);
+                var tmpEx = new Exception("Erro ao formatar string.", ex);
                 throw tmpEx;
             }
         }
 
         /// <summary>
-        /// Converte uma imagem em array de bytes.
+        ///     Converte uma imagem em array de bytes.
         /// </summary>
         /// <param name="image"></param>
         /// <returns></returns>
         public static byte[] ConvertImageToByte(Image image)
         {
-            if (image == null)
-            {
-                return null;
-            }
+            if (image == null) return null;
 
             if (image.GetType().ToString() == "System.Drawing.Bitmap")
-            {
                 using (var ms = new MemoryStream())
                 {
                     image.Save(ms, ImageFormat.Jpeg);
                     return ms.ToArray();
                 }
-            }
-            else
-            {
-                throw new NotImplementedException("ConvertImageToByte invalid type " + image.GetType().ToString());
-            }
+
+            throw new NotImplementedException("ConvertImageToByte invalid type " + image.GetType());
         }
 
         internal static Image DrawText(string text, Font font, Color textColor, Color backColor)
         {
             //first, create a dummy bitmap just to get a graphics object
             Image img = new Bitmap(1, 1);
-            Graphics drawing = Graphics.FromImage(img);
+            var drawing = Graphics.FromImage(img);
 
             //measure the string to see how big the image needs to be
-            SizeF textSize = drawing.MeasureString(text, font);
+            var textSize = drawing.MeasureString(text, font);
 
             //free up the dummy image and old graphics object
             img.Dispose();
             drawing.Dispose();
 
             //create a new image of the right size
-            img = new Bitmap((int)textSize.Width - Convert.ToInt32(font.Size * 1.5), (int)textSize.Height, PixelFormat.Format24bppRgb);
+            img = new Bitmap((int) textSize.Width - Convert.ToInt32(font.Size * 1.5), (int) textSize.Height,
+                PixelFormat.Format24bppRgb);
 
             drawing = Graphics.FromImage(img);
 

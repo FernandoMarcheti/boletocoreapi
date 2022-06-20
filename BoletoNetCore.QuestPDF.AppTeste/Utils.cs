@@ -1,6 +1,7 @@
 ﻿using System;
-using System.IO;
-using System.Text;
+using BoletoNetCore.Banco;
+using BoletoNetCore.Boleto;
+using BoletoNetCore.Enums;
 
 namespace BoletoNetCore.QuestPDF.AppTeste
 {
@@ -10,7 +11,8 @@ namespace BoletoNetCore.QuestPDF.AppTeste
 
         private static int _proximoNossoNumero = 1;
 
-        internal static Beneficiario GerarBeneficiario(string codigoBeneficiario, string digitoCodigoBeneficiario, string codigoTransmissao, ContaBancaria contaBancaria)
+        internal static Beneficiario GerarBeneficiario(string codigoBeneficiario, string digitoCodigoBeneficiario,
+            string codigoTransmissao, ContaBancaria contaBancaria)
         {
             return new Beneficiario
             {
@@ -79,32 +81,32 @@ namespace BoletoNetCore.QuestPDF.AppTeste
             return boletos;
         }
 
-        internal static Boleto GerarBoleto(IBanco banco, int i, string aceite, int NossoNumeroInicial)
+        internal static Boleto.Boleto GerarBoleto(IBanco banco, int i, string aceite, int NossoNumeroInicial)
         {
             if (aceite == "?")
                 aceite = _contador % 2 == 0 ? "N" : "A";
 
-            var boleto = new Boleto(banco)
+            var boleto = new Boleto.Boleto(banco)
             {
                 Pagador = GerarPagador(),
                 DataEmissao = DateTime.Now.AddDays(-3),
                 DataProcessamento = DateTime.Now,
                 DataVencimento = DateTime.Now.AddMonths(i),
-                ValorTitulo = (decimal)100 * i,
+                ValorTitulo = (decimal) 100 * i,
                 NossoNumero = NossoNumeroInicial == 0 ? "" : (NossoNumeroInicial + _proximoNossoNumero).ToString(),
-                NumeroDocumento = "BB" + _proximoNossoNumero.ToString("D6") + (char)(64 + i),
+                NumeroDocumento = "BB" + _proximoNossoNumero.ToString("D6") + (char) (64 + i),
                 EspecieDocumento = TipoEspecieDocumento.DM,
                 Aceite = aceite,
                 CodigoInstrucao1 = "11",
                 CodigoInstrucao2 = "22",
                 DataDesconto = DateTime.Now.AddMonths(i),
-                ValorDesconto = (decimal)(100 * i * 0.10),
+                ValorDesconto = (decimal) (100 * i * 0.10),
                 DataMulta = DateTime.Now.AddMonths(i),
-                PercentualMulta = (decimal)2.00,
-                ValorMulta = (decimal)(100 * i * (2.00 / 100)),
+                PercentualMulta = (decimal) 2.00,
+                ValorMulta = (decimal) (100 * i * (2.00 / 100)),
                 DataJuros = DateTime.Now.AddMonths(i),
-                PercentualJurosDia = (decimal)0.2,
-                ValorJurosDia = (decimal)(100 * i * (0.2 / 100)),
+                PercentualJurosDia = (decimal) 0.2,
+                ValorJurosDia = (decimal) (100 * i * (0.2 / 100)),
                 AvisoDebitoAutomaticoContaCorrente = "2",
                 MensagemArquivoRemessa = "Mensagem para o arquivo remessa",
                 NumeroControleParticipante = "CHAVEPRIMARIA" + _proximoNossoNumero
@@ -117,6 +119,5 @@ namespace BoletoNetCore.QuestPDF.AppTeste
             _proximoNossoNumero++;
             return boleto;
         }
-
     }
 }

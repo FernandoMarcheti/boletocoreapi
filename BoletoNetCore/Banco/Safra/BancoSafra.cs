@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using BoletoNetCore.Exceptions;
-using static System.String;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Safra
 {
     internal sealed partial class BancoSafra : BancoFebraban<BancoSafra>, IBanco
     {
@@ -12,7 +10,7 @@ namespace BoletoNetCore
             Codigo = 422;
             Nome = "Safra";
             Digito = "7";
-            IdsRetornoCnab400RegistroDetalhe = new List<string> { "1" };
+            IdsRetornoCnab400RegistroDetalhe = new List<string> {"1"};
             RemoveAcentosArquivoRemessa = true;
         }
 
@@ -23,12 +21,11 @@ namespace BoletoNetCore
             if (!CarteiraFactory<BancoSafra>.CarteiraEstaImplementada(contaBancaria.CarteiraComVariacaoPadrao))
                 throw BoletoNetCoreException.CarteiraNaoImplementada(contaBancaria.CarteiraComVariacaoPadrao);
 
-            contaBancaria.FormatarDados("ATÉ O VENCIMENTO EM QUALQUER BANCO. APÓS O VENCIMENTO SOMENTE NO SAFRA.", "", "", 6);
+            contaBancaria.FormatarDados("ATÉ O VENCIMENTO EM QUALQUER BANCO. APÓS O VENCIMENTO SOMENTE NO SAFRA.", "",
+                "", 6);
 
-            Beneficiario.CodigoFormatado = $"{contaBancaria.Agencia}-{contaBancaria.DigitoAgencia} / {contaBancaria.Conta}-{contaBancaria.DigitoConta}";
+            Beneficiario.CodigoFormatado =
+                $"{contaBancaria.Agencia}-{contaBancaria.DigitoAgencia} / {contaBancaria.Conta}-{contaBancaria.DigitoConta}";
         }
-
     }
 }
-
-

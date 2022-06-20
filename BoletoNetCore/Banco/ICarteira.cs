@@ -1,9 +1,9 @@
-﻿namespace BoletoNetCore
+﻿namespace BoletoNetCore.Banco
 {
     internal interface ICarteira<T>
         where T : IBanco
     {
-        void FormataNossoNumero(Boleto boleto);
-        string FormataCodigoBarraCampoLivre(Boleto boleto);
+        void FormataNossoNumero(Boleto.Boleto boleto);
+        string FormataCodigoBarraCampoLivre(Boleto.Boleto boleto);
     }
 }

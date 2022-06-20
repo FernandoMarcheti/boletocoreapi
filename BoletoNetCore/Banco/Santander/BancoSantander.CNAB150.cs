@@ -1,9 +1,10 @@
 ﻿using System;
+using BoletoNetCore.Util;
 using static System.String;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Santander
 {
-    partial class BancoSantander : IBancoCNAB150
+    internal partial class BancoSantander : IBancoCNAB150
     {
         public string GerarHeaderRemessaCNAB150(ref int numeroArquivoRemessa, ref int numeroRegistro)
         {
@@ -29,7 +30,11 @@ namespace BoletoNetCore
                 throw new Exception("Erro ao gerar HEADER do arquivo de remessa do CNAB150.", ex);
             }
         }
-        public string GerarTrailerRemessaCNAB150(int numeroRegistroGeral, decimal valorBoletoGeral, int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples, int numeroRegistroCobrancaVinculada, decimal valorCobrancaVinculada, int numeroRegistroCobrancaCaucionada, decimal valorCobrancaCaucionada, int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada)
+
+        public string GerarTrailerRemessaCNAB150(int numeroRegistroGeral, decimal valorBoletoGeral,
+            int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples, int numeroRegistroCobrancaVinculada,
+            decimal valorCobrancaVinculada, int numeroRegistroCobrancaCaucionada, decimal valorCobrancaCaucionada,
+            int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada)
         {
             try
             {
@@ -48,7 +53,11 @@ namespace BoletoNetCore
                 throw new Exception("Erro ao gerar TRAILER no arquivo de remessa do CNAB150.", ex);
             }
         }
-        public string GerarTrailerLoteRemessaCNAB150(ref int numeroArquivoRemessa, int numeroRegistroGeral, decimal valorBoletoGeral, int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples, int numeroRegistroCobrancaVinculada, decimal valorCobrancaVinculada, int numeroRegistroCobrancaCaucionada, decimal valorCobrancaCaucionada, int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada)
+
+        public string GerarTrailerLoteRemessaCNAB150(ref int numeroArquivoRemessa, int numeroRegistroGeral,
+            decimal valorBoletoGeral, int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples,
+            int numeroRegistroCobrancaVinculada, decimal valorCobrancaVinculada, int numeroRegistroCobrancaCaucionada,
+            decimal valorCobrancaCaucionada, int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada)
         {
             try
             {
@@ -70,19 +79,21 @@ namespace BoletoNetCore
                 throw new Exception("Erro ao gerar TRAILER do lote no arquivo de remessa do CNAB150.", ex);
             }
         }
-        public string GerarDetalheRemessaCNAB150(Boleto boleto, ref int registro)
+
+        public string GerarDetalheRemessaCNAB150(Boleto.Boleto boleto, ref int registro)
         {
-            string detalhe = Empty;
+            var detalhe = Empty;
             detalhe += GerarDetalheSegmentoERemessaCNAB150(boleto, ref registro);
             return detalhe;
         }
-        private string GerarDetalheSegmentoERemessaCNAB150(Boleto boleto, ref int registro)
+
+        private string GerarDetalheSegmentoERemessaCNAB150(Boleto.Boleto boleto, ref int registro)
         {
             var reg = new TRegistroEDI();
             registro++;
 
-            string tipoIdentificacao = (boleto.Pagador.CPFCNPJ.Trim().Length <= 11) ? "2" : "1";
-            string dadosConta = $"{boleto.ContaDebitada}{boleto.DigitoVerificadorAgenciaContaDebitada}";
+            var tipoIdentificacao = boleto.Pagador.CPFCNPJ.Trim().Length <= 11 ? "2" : "1";
+            var dadosConta = $"{boleto.ContaDebitada}{boleto.DigitoVerificadorAgenciaContaDebitada}";
 
             reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0001, 001, 0, "E", '0');
             reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0002, 025, 0, boleto.NumeroControleParticipante, ' ');
@@ -99,7 +110,6 @@ namespace BoletoNetCore
             reg.CodificarLinha();
             var vLinha = reg.LinhaRegistro;
             return vLinha;
-
         }
     }
 }

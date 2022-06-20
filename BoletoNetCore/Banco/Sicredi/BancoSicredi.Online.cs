@@ -1,57 +1,26 @@
 using System;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Sicredi
 {
-    partial class BancoSicredi : IBancoOnlineRest
+    internal partial class BancoSicredi : IBancoOnlineRest
     {
-        #region HttpClient
-        private HttpClient _httpClient;
-        private HttpClient httpClient
-        {
-            get
-            {
-                if (this._httpClient == null)
-                {
-                    this._httpClient = new HttpClient();
-                    this._httpClient.BaseAddress = new Uri("https://cobrancaonline.sicredi.com.br/sicredi-cobranca-ws-ecomm-api/ecomm/v1/boleto/");
-                }
-
-                return this._httpClient;
-            }
-        }
-        #endregion
-
-        #region Chaves de Acesso Api
-
-        // Chave Master que deve ser gerada pelo portal do sicredi
-        // Menu Cobrança, Sub Menu Lateral Código de Acesso / Gerar
-        public string ChaveApi { get; set; }
-
-        // Chave de Transação valida por 24 horas
-        // Segundo o manual, não é permitido gerar uma nova chave de transação antes da atual estar expirada.
-        // Caso seja necessário gerar uma chave de transação antes, é necessário criar uma nova chave master, o que invalida a anterior.
-        public string Token { get; set; }
-
-        #endregion
-
         public async Task<string> GerarToken()
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "autenticacao");
-            request.Headers.Add("token", this.ChaveApi);
+            request.Headers.Add("token", ChaveApi);
 
-            var response = await this.httpClient.SendAsync(request);
-            await this.CheckHttpResponseError(response);
+            var response = await httpClient.SendAsync(request);
+            await CheckHttpResponseError(response);
             var ret = await response.Content.ReadFromJsonAsync<ChaveTransacaoSicrediApi>();
-            this.Token = ret.ChaveTransacao;
+            Token = ret.ChaveTransacao;
             return ret.ChaveTransacao;
         }
 
-        public async Task RegistrarBoleto(Boleto boleto)
+        public async Task RegistrarBoleto(Boleto.Boleto boleto)
         {
             var emissao = new EmissaoBoletoSicrediApi();
             emissao.Agencia = boleto.Banco.Beneficiario.ContaBancaria.Agencia;
@@ -73,7 +42,7 @@ namespace BoletoNetCore
             emissao.Telefone = boleto.Pagador.Telefone;
 
             emissao.Email = "";
-            emissao.EspecieDocumento = this.EspecieDocumentoSicrediCNAB400(boleto.EspecieDocumento);
+            emissao.EspecieDocumento = EspecieDocumentoSicrediCNAB400(boleto.EspecieDocumento);
             emissao.SeuNumero = boleto.NumeroDocumento;
             emissao.DataVencimento = boleto.DataVencimento.ToString("dd/MM/yyyy");
             emissao.Valor = boleto.ValorTitulo;
@@ -94,10 +63,10 @@ namespace BoletoNetCore
             emissao.NumDiasNegativacaoAuto = boleto.DiasProtesto;
 
             var request = new HttpRequestMessage(HttpMethod.Post, "emissao");
-            request.Headers.Add("token", this.Token);
+            request.Headers.Add("token", Token);
             request.Content = JsonContent.Create(emissao);
-            var response = await this.httpClient.SendAsync(request);
-            await this.CheckHttpResponseError(response);
+            var response = await httpClient.SendAsync(request);
+            await CheckHttpResponseError(response);
 
             // todo: verificar a necessidade de preencher dados do boleto com o retorno do sicredi
             var boletoEmitido = await response.Content.ReadFromJsonAsync<BoletoEmitidoSicrediApi>();
@@ -105,21 +74,7 @@ namespace BoletoNetCore
             boletoEmitido.CodigoBarra.ToString();
         }
 
-        private async Task CheckHttpResponseError(HttpResponseMessage response)
-        {
-            if (response.IsSuccessStatusCode)
-                return;
-
-            if (response.StatusCode == HttpStatusCode.BadRequest || (response.StatusCode == HttpStatusCode.NotFound && response.Content.Headers.ContentType.MediaType == "application/json"))
-            {
-                var bad = await response.Content.ReadFromJsonAsync<BadRequestSicrediApi>();
-                throw new Exception(string.Format("{0} {1}", bad.Parametro, bad.Mensagem).Trim());
-            }
-            else
-                throw new Exception(string.Format("Erro desconhecido: {0}", response.StatusCode));
-        }
-
-        public async Task ConsultarStatus(Boleto boleto)
+        public async Task ConsultarStatus(Boleto.Boleto boleto)
         {
             var agencia = boleto.Banco.Beneficiario.ContaBancaria.Agencia;
             var posto = boleto.Banco.Beneficiario.ContaBancaria.DigitoAgencia;
@@ -127,22 +82,73 @@ namespace BoletoNetCore
             var nossoNumero = boleto.NossoNumero;
 
             // existem outros parametros no manual para consulta de multiplos boletos
-            var url = string.Format("consulta?agencia={0}&cedente={1}&posto={2}&nossoNumero={3}", agencia, cedente, posto, nossoNumero);
+            var url = string.Format("consulta?agencia={0}&cedente={1}&posto={2}&nossoNumero={3}", agencia, cedente,
+                posto, nossoNumero);
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("token", this.Token);
-            var response = await this.httpClient.SendAsync(request);
-            await this.CheckHttpResponseError(response);
+            request.Headers.Add("token", Token);
+            var response = await httpClient.SendAsync(request);
+            await CheckHttpResponseError(response);
             var ret = await response.Content.ReadFromJsonAsync<RetornoConsultaBoletoSicrediApi[]>();
 
             // todo: verificar quais dados necessarios para preencher boleto
             ret[0].Situacao.ToString();
         }
+
+        private async Task CheckHttpResponseError(HttpResponseMessage response)
+        {
+            if (response.IsSuccessStatusCode)
+                return;
+
+            if (response.StatusCode == HttpStatusCode.BadRequest || (response.StatusCode == HttpStatusCode.NotFound &&
+                                                                     response.Content.Headers.ContentType.MediaType ==
+                                                                     "application/json"))
+            {
+                var bad = await response.Content.ReadFromJsonAsync<BadRequestSicrediApi>();
+                throw new Exception(string.Format("{0} {1}", bad.Parametro, bad.Mensagem).Trim());
+            }
+
+            throw new Exception(string.Format("Erro desconhecido: {0}", response.StatusCode));
+        }
+
+        #region HttpClient
+
+        private HttpClient _httpClient;
+
+        private HttpClient httpClient
+        {
+            get
+            {
+                if (_httpClient == null)
+                {
+                    _httpClient = new HttpClient();
+                    _httpClient.BaseAddress =
+                        new Uri("https://cobrancaonline.sicredi.com.br/sicredi-cobranca-ws-ecomm-api/ecomm/v1/boleto/");
+                }
+
+                return _httpClient;
+            }
+        }
+
+        #endregion
+
+        #region Chaves de Acesso Api
+
+        // Chave Master que deve ser gerada pelo portal do sicredi
+        // Menu Cobrança, Sub Menu Lateral Código de Acesso / Gerar
+        public string ChaveApi { get; set; }
+
+        // Chave de Transação valida por 24 horas
+        // Segundo o manual, não é permitido gerar uma nova chave de transação antes da atual estar expirada.
+        // Caso seja necessário gerar uma chave de transação antes, é necessário criar uma nova chave master, o que invalida a anterior.
+        public string Token { get; set; }
+
+        #endregion
     }
 
     #region Classes Auxiliares (json) Sicredi
 
-    class InstrucaoSicrediApi
+    internal class InstrucaoSicrediApi
     {
         public string Agencia { get; set; }
         public string Posto { get; set; }
@@ -173,20 +179,20 @@ namespace BoletoNetCore
         public string ComplementoInstrucao { get; set; }
     }
 
-    class BadRequestSicrediApi
+    internal class BadRequestSicrediApi
     {
         public string Codigo { get; set; }
         public string Mensagem { get; set; }
         public string Parametro { get; set; }
     }
 
-    class ChaveTransacaoSicrediApi
+    internal class ChaveTransacaoSicrediApi
     {
         public string ChaveTransacao { get; set; }
         public DateTime dataExpiracao { get; set; }
     }
 
-    class RetornoConsultaBoletoSicrediApi
+    internal class RetornoConsultaBoletoSicrediApi
     {
         public string SeuNumero { get; set; }
         public string NossoNumero { get; set; }
@@ -199,7 +205,7 @@ namespace BoletoNetCore
         public string Situacao { get; set; }
     }
 
-    class BoletoEmitidoSicrediApi
+    internal class BoletoEmitidoSicrediApi
     {
         public string LinhaDigitável { get; set; }
         public string CodigoBanco { get; set; }
@@ -229,17 +235,19 @@ namespace BoletoNetCore
         public string CodigoBarra { get; set; }
     }
 
-    class EmissaoBoletoSicrediApi
+    internal class EmissaoBoletoSicrediApi
     {
         public string Agencia { get; set; }
         public string Posto { get; set; }
         public string Cedente { get; set; }
         public string NossoNumero { get; set; }
         public string CodigoPagador { get; set; }
+
         /// <summary>
-        /// 1 fisica - 2 juridica
+        ///     1 fisica - 2 juridica
         /// </summary>
         public string TipoPessoa { get; set; }
+
         public string CpfCnpj { get; set; }
         public string Nome { get; set; }
         public string Endereco { get; set; }
@@ -253,20 +261,24 @@ namespace BoletoNetCore
         public string SeuNumero { get; set; }
         public string DataVencimento { get; set; }
         public decimal Valor { get; set; }
+
         /// <summary>
-        /// A valor / B percentual
+        ///     A valor / B percentual
         /// </summary>
         public string TipoDesconto { get; set; }
+
         public decimal ValorDesconto1 { get; set; }
         public string DataDesconto1 { get; set; }
         public decimal ValorDesconto2 { get; set; }
         public string DataDesconto2 { get; set; }
         public decimal ValorDesconto3 { get; set; }
         public string DataDesconto3 { get; set; }
+
         /// <summary>
-        /// A valor / B percentual
+        ///     A valor / B percentual
         /// </summary>
         public string TipoJuros { get; set; }
+
         public decimal Juros { get; set; }
         public decimal Multas { get; set; }
         public decimal DescontoAntecipado { get; set; }

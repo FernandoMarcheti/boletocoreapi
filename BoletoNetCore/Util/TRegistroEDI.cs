@@ -1,85 +1,82 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Util
 {
     /// <summary>
-    /// Classe representativa de um registro (linha) de um arquivo EDI
+    ///     Classe representativa de um registro (linha) de um arquivo EDI
     /// </summary>
     public class TRegistroEDI
     {
-        #region Variáveis Privadas e Protegidas
+        #region VariÃ¡veis Privadas e Protegidas
+
         protected TTipoRegistroEDI _TipoRegistro;
         protected int _TamanhoMaximo = 0;
         protected char _CaracterPreenchimento = ' ';
-        private string _LinhaRegistro;
         protected List<TCampoRegistroEDI> _CamposEDI = new List<TCampoRegistroEDI>();
+
         #endregion
 
         #region Propriedades
-        /// <summary>
-        /// Tipo de Registro da linha do arquivo EDI
-        /// </summary>
-        public TTipoRegistroEDI TipoRegistro
-        {
-            get { return _TipoRegistro; }
-        }
 
         /// <summary>
-        /// Seta a linha do registro para a decodificação nos campos;
-        /// Obtém a linha decodificada a partir dos campos.
+        ///     Tipo de Registro da linha do arquivo EDI
         /// </summary>
-        public string LinhaRegistro
-        {
-            get { return _LinhaRegistro; }
-            set { _LinhaRegistro = value; }
-        }
+        public TTipoRegistroEDI TipoRegistro => _TipoRegistro;
 
         /// <summary>
-        /// Coleção dos campos do registro EDI
+        ///     Seta a linha do registro para a decodificaÃ§Ã£o nos campos;
+        ///     ObtÃ©m a linha decodificada a partir dos campos.
+        /// </summary>
+        public string LinhaRegistro { get; set; }
+
+        /// <summary>
+        ///     ColeÃ§Ã£o dos campos do registro EDI
         /// </summary>
         public List<TCampoRegistroEDI> CamposEDI
         {
-            get { return _CamposEDI; }
-            set { _CamposEDI = value; }
+            get => _CamposEDI;
+            set => _CamposEDI = value;
         }
+
         #endregion
 
-        #region Métodos Públicos
-        public void Adicionar(TTiposDadoEDI tipo, int posicao, int tamanho, int decimais, object valor, char prenchimento)
+        #region MÃ©todos PÃºblicos
+
+        public void Adicionar(TTiposDadoEDI tipo, int posicao, int tamanho, int decimais, object valor,
+            char prenchimento)
         {
-            this.CamposEDI.Add(new TCampoRegistroEDI(tipo, posicao, tamanho, decimais, valor, prenchimento));
+            CamposEDI.Add(new TCampoRegistroEDI(tipo, posicao, tamanho, decimais, valor, prenchimento));
         }
 
         /// <summary>
-        /// Codifica uma linha a partir dos campos; o resultado irá na propriedade LinhaRegistro
+        ///     Codifica uma linha a partir dos campos; o resultado irÃ¡ na propriedade LinhaRegistro
         /// </summary>
         public virtual void CodificarLinha()
         {
             var builder = new StringBuilder();
-            foreach (TCampoRegistroEDI campos in this._CamposEDI)
+            foreach (var campos in _CamposEDI)
             {
                 campos.CodificarNaturalParaEDI();
                 builder.Append(campos.ValorFormatado);
             }
-            this._LinhaRegistro = builder.ToString();
+
+            LinhaRegistro = builder.ToString();
         }
 
         /// <summary>
-        /// Decodifica uma linha a partir da propriedade LinhaRegistro nos campos do registro
+        ///     Decodifica uma linha a partir da propriedade LinhaRegistro nos campos do registro
         /// </summary>
         public virtual void DecodificarLinha()
         {
-            foreach (TCampoRegistroEDI campos in this._CamposEDI)
+            foreach (var campos in _CamposEDI)
             {
-                if (this._TamanhoMaximo > 0)
-                {
-                    this._LinhaRegistro = this._LinhaRegistro.PadRight(this._TamanhoMaximo, this._CaracterPreenchimento);
-                }
-                campos.ValorFormatado = this._LinhaRegistro.Substring(campos.PosicaoInicial, campos.TamanhoCampo);
+                if (_TamanhoMaximo > 0) LinhaRegistro = LinhaRegistro.PadRight(_TamanhoMaximo, _CaracterPreenchimento);
+                campos.ValorFormatado = LinhaRegistro.Substring(campos.PosicaoInicial, campos.TamanhoCampo);
                 campos.DecodificarEDIParaNatural();
             }
         }
+
         #endregion
     }
 }

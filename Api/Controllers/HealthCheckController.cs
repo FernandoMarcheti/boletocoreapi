@@ -7,6 +7,9 @@ namespace Api.Controllers
     public class HealthCheckController : ControllerBase
     {
         [HttpGet]
-        public IActionResult Get() => Ok("");
+        public IActionResult Get()
+        {
+            return Ok("");
+        }
     }
 }

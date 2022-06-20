@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using BoletoNetCore.Exceptions;
-using BoletoNetCore.Extensions;
-using static System.String;
+﻿using System.Collections.Generic;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.BancoNordeste
 {
     internal sealed partial class BancoNordeste : BancoFebraban<BancoNordeste>, IBanco
     {
@@ -13,7 +9,7 @@ namespace BoletoNetCore
             Codigo = 4;
             Nome = "Banco Nordeste";
             Digito = "3";
-            IdsRetornoCnab400RegistroDetalhe = new List<string> { "1" };
+            IdsRetornoCnab400RegistroDetalhe = new List<string> {"1"};
             RemoveAcentosArquivoRemessa = true;
         }
 

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using BoletoNetCore.Exceptions;
-using static System.String;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Santander
 {
     internal sealed partial class BancoSantander : BancoFebraban<BancoSantander>, IBanco
     {
@@ -12,7 +10,7 @@ namespace BoletoNetCore
             Codigo = 033;
             Nome = "Santander";
             Digito = "7";
-            IdsRetornoCnab400RegistroDetalhe = new List<string> { };
+            IdsRetornoCnab400RegistroDetalhe = new List<string>();
             RemoveAcentosArquivoRemessa = true;
         }
 
@@ -23,7 +21,7 @@ namespace BoletoNetCore
             if (!CarteiraFactory<BancoSantander>.CarteiraEstaImplementada(contaBancaria.CarteiraComVariacaoPadrao))
                 throw BoletoNetCoreException.CarteiraNaoImplementada(contaBancaria.CarteiraComVariacaoPadrao);
 
-            contaBancaria.FormatarDados("PAGÁVEL PREFERENCIALMENTE NO BANCO SANTANDER.", "", "", digitosConta: 9);
+            contaBancaria.FormatarDados("PAGÁVEL PREFERENCIALMENTE NO BANCO SANTANDER.", "", "", 9);
 
             if (contaBancaria.CarteiraComVariacaoPadrao != "1")
             {
@@ -40,10 +38,5 @@ namespace BoletoNetCore
         {
             return "";
         }
-
-       
-
-
-
     }
 }

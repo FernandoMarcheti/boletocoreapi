@@ -3,19 +3,19 @@ using BoletoNetCore.Extensions;
 using static System.String;
 
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Itau.Carteiras
 {
     [CarteiraCodigo("157")]
     internal class BancoItauCarteira157 : ICarteira<BancoItau>
     {
-        internal static Lazy<ICarteira<BancoItau>> Instance { get; } = new Lazy<ICarteira<BancoItau>>(() => new BancoItauCarteira157());
-
         private BancoItauCarteira157()
         {
-
         }
 
-        public void FormataNossoNumero(Boleto boleto)
+        internal static Lazy<ICarteira<BancoItau>> Instance { get; } =
+            new Lazy<ICarteira<BancoItau>>(() => new BancoItauCarteira157());
+
+        public void FormataNossoNumero(Boleto.Boleto boleto)
         {
             if (IsNullOrWhiteSpace(boleto.NossoNumero))
                 throw new Exception("Nosso Número não informado.");
@@ -25,13 +25,16 @@ namespace BoletoNetCore
                 throw new Exception($"Nosso Número ({boleto.NossoNumero}) deve conter 8 dígitos.");
 
             boleto.NossoNumero = boleto.NossoNumero.PadLeft(8, '0');
-            boleto.NossoNumeroDV = (boleto.Banco.Beneficiario.ContaBancaria.Agencia + boleto.Banco.Beneficiario.ContaBancaria.Conta + boleto.Carteira + boleto.NossoNumero).CalcularDVItau();
+            boleto.NossoNumeroDV =
+                (boleto.Banco.Beneficiario.ContaBancaria.Agencia + boleto.Banco.Beneficiario.ContaBancaria.Conta +
+                 boleto.Carteira + boleto.NossoNumero).CalcularDVItau();
             boleto.NossoNumeroFormatado = $"{boleto.Carteira}/{boleto.NossoNumero}-{boleto.NossoNumeroDV}";
         }
 
-        public string FormataCodigoBarraCampoLivre(Boleto boleto)
+        public string FormataCodigoBarraCampoLivre(Boleto.Boleto boleto)
         {
-            return $"{boleto.Carteira}{boleto.NossoNumero}{boleto.NossoNumeroDV}{boleto.Banco.Beneficiario.ContaBancaria.Agencia}{boleto.Banco.Beneficiario.ContaBancaria.Conta}{boleto.Banco.Beneficiario.ContaBancaria.DigitoConta}000";
+            return
+                $"{boleto.Carteira}{boleto.NossoNumero}{boleto.NossoNumeroDV}{boleto.Banco.Beneficiario.ContaBancaria.Agencia}{boleto.Banco.Beneficiario.ContaBancaria.Conta}{boleto.Banco.Beneficiario.ContaBancaria.DigitoConta}000";
         }
     }
 }

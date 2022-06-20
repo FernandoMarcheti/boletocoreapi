@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using BoletoNetCore.Exceptions;
-using System;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Sicredi
 {
     internal sealed partial class BancoSicredi : BancoFebraban<BancoSicredi>, IBanco
     {
@@ -11,7 +11,7 @@ namespace BoletoNetCore
             Codigo = 748;
             Nome = "Sicredi";
             Digito = "X";
-            IdsRetornoCnab400RegistroDetalhe = new List<string> { "1" };
+            IdsRetornoCnab400RegistroDetalhe = new List<string> {"1"};
             RemoveAcentosArquivoRemessa = true;
         }
 
@@ -24,7 +24,8 @@ namespace BoletoNetCore
 
             contaBancaria.FormatarDados("PAGÁVEL EM QUALQUER BANCO ATÉ O VENCIMENTO.", "", "", 9);
 
-            Beneficiario.CodigoFormatado = $"{contaBancaria.Agencia}.{contaBancaria.OperacaoConta}.{Beneficiario.Codigo}";
+            Beneficiario.CodigoFormatado =
+                $"{contaBancaria.Agencia}.{contaBancaria.OperacaoConta}.{Beneficiario.Codigo}";
         }
 
         public override string FormatarNomeArquivoRemessa(int sequencial)
@@ -44,9 +45,8 @@ namespace BoletoNetCore
                 return string.Format("{0}{1}{2}.{3}", Beneficiario.Codigo, mes, dia, "CRM");
 
             //número máximos de arquivos enviados no dia são 10 
-            return string.Format("{0}{1}{2}.{3}", Beneficiario.Codigo, mes, dia, $"RM{(sequencial == 10 ? 0 : sequencial)}");
-
+            return string.Format("{0}{1}{2}.{3}", Beneficiario.Codigo, mes, dia,
+                $"RM{(sequencial == 10 ? 0 : sequencial)}");
         }
-       
     }
 }

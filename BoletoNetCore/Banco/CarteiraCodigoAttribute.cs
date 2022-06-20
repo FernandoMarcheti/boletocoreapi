@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco
 {
     [AttributeUsage(AttributeTargets.Class)]
     internal sealed class CarteiraCodigoAttribute : Attribute

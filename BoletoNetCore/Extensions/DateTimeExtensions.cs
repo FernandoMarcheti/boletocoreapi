@@ -1,4 +1,5 @@
 ﻿using System;
+using BoletoNetCore.Util;
 
 namespace BoletoNetCore.Extensions
 {
@@ -38,7 +39,8 @@ namespace BoletoNetCore.Extensions
             var rangeUtilizavel = DateTime.Now.Date.DateDiff(data, DateInterval.Day);
 
             if (rangeUtilizavel > 5500 || rangeUtilizavel < -3500)
-                throw new Exception("Data do vencimento ("+data.ToString()+") fora do range de utilização proposto pela CENEGESC. Comunicado FEBRABAN de n° 082/2012 de 14/06/2012");
+                throw new Exception("Data do vencimento (" + data +
+                                    ") fora do range de utilização proposto pela CENEGESC. Comunicado FEBRABAN de n° 082/2012 de 14/06/2012");
 
             while (data > dateBase.AddDays(9999))
                 dateBase = data.AddDays(-(dateBase.DateDiff(data, DateInterval.Day) - 9999 - 1 + 1000));
@@ -54,15 +56,15 @@ namespace BoletoNetCore.Extensions
                 case DateInterval.Day:
                     return timeSpan.Days;
                 case DateInterval.Hour:
-                    return (long)timeSpan.TotalHours;
+                    return (long) timeSpan.TotalHours;
                 case DateInterval.Minute:
-                    return (long)timeSpan.TotalMinutes;
+                    return (long) timeSpan.TotalMinutes;
                 case DateInterval.Month:
                     return timeSpan.Days / 30;
                 case DateInterval.Quarter:
-                    return (timeSpan.Days / 30) / 3;
+                    return timeSpan.Days / 30 / 3;
                 case DateInterval.Second:
-                    return (long)timeSpan.TotalSeconds;
+                    return (long) timeSpan.TotalSeconds;
                 case DateInterval.Week:
                     return timeSpan.Days / 7;
                 case DateInterval.Year:
@@ -71,6 +73,5 @@ namespace BoletoNetCore.Extensions
                     throw new ArgumentException("Intervalo não suportado");
             }
         }
-
     }
 }

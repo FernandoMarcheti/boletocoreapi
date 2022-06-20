@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace BoletoNetCore
+﻿namespace BoletoNetCore.Enums
 {
     public enum Modulo11Algoritmo
     {
@@ -13,5 +8,4 @@ namespace BoletoNetCore
         Bradesco = 3,
         Sicoob = 4
     }
-
 }

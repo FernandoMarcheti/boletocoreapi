@@ -1,5 +1,5 @@
 ﻿using Api.Models;
-using BoletoNetCore;
+using BoletoNetCore.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers
@@ -8,7 +8,7 @@ namespace Api.Controllers
     [ApiController]
     public class BoletoController : ControllerBase
     {
-        [HttpPost]        
+        [HttpPost]
         public IActionResult Post([FromBody] BoletoModel inputModel)
         {
             return Ok(TipoImpressaoBoleto.Banco);

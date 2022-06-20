@@ -1,9 +1,7 @@
-﻿using BoletoNetCore.QuestPdf;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using BoletoNetCore.Boleto;
+using BoletoNetCore.QuestPdf.Carne;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.QuestPdf
 {
     public static class BoletoNetCoreHelper
     {

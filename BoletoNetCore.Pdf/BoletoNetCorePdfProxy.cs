@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using BoletoNetCore.BoletoImpressao;
+using Wkhtmltopdf.NetCore;
 
 namespace BoletoNetCore.Pdf
 {
@@ -8,7 +10,6 @@ namespace BoletoNetCore.Pdf
     {
         public override bool GerarBoletos(string nomeArquivo, ref string mensagemErro)
         {
-            
             mensagemErro = "";
             try
             {
@@ -17,26 +18,30 @@ namespace BoletoNetCore.Pdf
                     mensagemErro = "Realize o setup da cobrança antes de executar este método.";
                     return false;
                 }
+
                 if (string.IsNullOrWhiteSpace(nomeArquivo))
                 {
                     mensagemErro = "Nome do arquivo não informado." + Environment.NewLine;
                     return false;
                 }
+
                 if (quantidadeBoletos == 0)
                 {
                     mensagemErro = "Nenhum boleto encontrado." + Environment.NewLine;
                     return false;
                 }
+
                 var extensaoArquivo = nomeArquivo.Substring(nomeArquivo.Length - 3).ToUpper();
                 if (extensaoArquivo != "HTM" && extensaoArquivo != "PDF")
                 {
                     mensagemErro = "Tipo do arquivo inválido: HTM ou PDF" + Environment.NewLine;
                     return false;
                 }
+
                 var html = new StringBuilder();
-                foreach (Boleto boletoTmp in boletos)
+                foreach (var boletoTmp in boletos)
                 {
-                    BoletoBancario imprimeBoleto = new BoletoBancario
+                    var imprimeBoleto = new BoletoBancario
                     {
                         Boleto = boletoTmp,
                         OcultarInstrucoes = false,
@@ -49,6 +54,7 @@ namespace BoletoNetCore.Pdf
                         html.Append("</div>");
                     }
                 }
+
                 switch (extensaoArquivo.ToUpper())
                 {
                     case "HTM":
@@ -57,9 +63,8 @@ namespace BoletoNetCore.Pdf
                     case "PDF":
                         GerarArquivoPDF(html.ToString(), nomeArquivo);
                         break;
-                    default:
-                        break;
                 }
+
                 return true;
             }
             catch (Exception ex)
@@ -69,8 +74,8 @@ namespace BoletoNetCore.Pdf
                     mensagemErro += ex.Message + Environment.NewLine;
                     ex = ex.InnerException;
                 }
-                return false;
 
+                return false;
             }
         }
 
@@ -78,8 +83,8 @@ namespace BoletoNetCore.Pdf
         {
 #if NETSTANDARD2
 
-            var pdf = new Wkhtmltopdf.NetCore.HtmlAsPdf().GetPDF(html);
-            using (FileStream fs = new FileStream(nomeArquivo, FileMode.Create))
+            var pdf = new HtmlAsPdf().GetPDF(html);
+            using (var fs = new FileStream(nomeArquivo, FileMode.Create))
             {
                 fs.Write(pdf, 0, pdf.Length);
                 fs.Close();
@@ -87,8 +92,6 @@ namespace BoletoNetCore.Pdf
 #else
             throw new NotImplementedException();
 #endif
-
         }
-
     }
 }

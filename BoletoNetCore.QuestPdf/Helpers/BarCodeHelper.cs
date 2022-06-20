@@ -1,12 +1,9 @@
-﻿using Barcoder.Code128;
-using Barcoder.Qr;
-using Barcoder.Renderer.Image;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
-using System.Text;
+using Barcoder.Code128;
+using Barcoder.Renderer.Image;
 
-namespace BoletoNetCore.QuestPdf
+namespace BoletoNetCore.QuestPdf.Helpers
 {
     internal static class BarCodeHelper
     {
@@ -23,6 +20,5 @@ namespace BoletoNetCore.QuestPdf
                 return ms.ToArray();
             }
         }
-
     }
 }

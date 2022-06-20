@@ -1,11 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using BoletoNetCore.Exceptions;
+using BoletoNetCore.Arquivo;
+using BoletoNetCore.Boleto;
+using BoletoNetCore.Enums;
+using BoletoNetCore.Util;
 using static System.String;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Santander
 {
-    partial class BancoSantander : IBancoCNAB240
+    internal partial class BancoSantander : IBancoCNAB240
     {
         public string GerarHeaderRemessaCNAB240(ref int numeroArquivoRemessa, ref int numeroRegistro)
         {
@@ -18,7 +20,8 @@ namespace BoletoNetCore
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0009, 008, 0, Empty, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0017, 001, 0, Beneficiario.TipoCPFCNPJ("0"), '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 015, 0, Beneficiario.CPFCNPJ, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0033, 015, 0, Beneficiario.CodigoTransmissao, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0033, 015, 0, Beneficiario.CodigoTransmissao,
+                    '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0048, 025, 0, Empty, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0073, 030, 0, Beneficiario.Nome, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0103, 030, 0, "BANCO SANTANDER", ' ');
@@ -54,7 +57,8 @@ namespace BoletoNetCore
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 001, 0, Beneficiario.TipoCPFCNPJ("0"), '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0019, 015, 0, Beneficiario.CPFCNPJ, '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0034, 020, 0, Empty, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0054, 015, 0, Beneficiario.CodigoTransmissao, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0054, 015, 0, Beneficiario.CodigoTransmissao,
+                    '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0069, 005, 0, Empty, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0074, 030, 0, Beneficiario.Nome, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0104, 040, 0, Empty, ' ');
@@ -71,7 +75,7 @@ namespace BoletoNetCore
             }
         }
 
-        public string GerarDetalheRemessaCNAB240(Boleto boleto, ref int registro)
+        public string GerarDetalheRemessaCNAB240(Boleto.Boleto boleto, ref int registro)
         {
             // Segmento P (Obrigatório)
             var detalhe = GerarDetalheSegmentoPRemessaCNAB240(boleto, ref registro);
@@ -95,10 +99,62 @@ namespace BoletoNetCore
                 detalhe += Environment.NewLine;
                 detalhe += strline;
             }
+
             return detalhe;
         }
 
-        private string GerarDetalheSegmentoPRemessaCNAB240(Boleto boleto, ref int numeroRegistroGeral)
+        public string GerarTrailerLoteRemessaCNAB240(ref int numeroArquivoRemessa, int numeroRegistroGeral,
+            int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples, int numeroRegistroCobrancaVinculada,
+            decimal valorCobrancaVinculada, int numeroRegistroCobrancaCaucionada, decimal valorCobrancaCaucionada,
+            int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada)
+        {
+            try
+            {
+                // O número de registros no lote é igual ao número de registros gerados + 2 (header e trailler do lote)
+                var numeroRegistrosNoLote = numeroRegistroGeral + 2;
+                var reg = new TRegistroEDI();
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0001, 003, 0, "033", '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0004, 004, 0, "0001", '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0008, 001, 0, "5", '0');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0009, 009, 0, Empty, ' ');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 006, 0, numeroRegistrosNoLote, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0024, 217, 0, Empty, ' ');
+                reg.CodificarLinha();
+                return reg.LinhaRegistro;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao gerar HEADER do lote no arquivo de remessa do CNAB400.", ex);
+            }
+        }
+
+        public string GerarTrailerRemessaCNAB240(int numeroRegistroGeral, decimal valorBoletoGeral,
+            int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples, int numeroRegistroCobrancaVinculada,
+            decimal valorCobrancaVinculada, int numeroRegistroCobrancaCaucionada, decimal valorCobrancaCaucionada,
+            int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada)
+        {
+            try
+            {
+                // O número de registros no arquivo é igual ao número de registros gerados + 4 (header e trailler do lote / header e trailler do arquivo)
+                var numeroRegistrosNoArquivo = numeroRegistroGeral + 4;
+                var reg = new TRegistroEDI();
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0001, 003, 0, "033", '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0004, 004, 0, "9999", '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0008, 001, 0, "9", '0');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0009, 009, 0, Empty, ' ');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 006, 0, "1", '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0024, 006, 0, numeroRegistrosNoArquivo, '0');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0030, 211, 0, Empty, ' ');
+                reg.CodificarLinha();
+                return reg.LinhaRegistro;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao gerar HEADER do arquivo de remessa do CNAB400.", ex);
+            }
+        }
+
+        private string GerarDetalheSegmentoPRemessaCNAB240(Boleto.Boleto boleto, ref int numeroRegistroGeral)
         {
             try
             {
@@ -111,14 +167,21 @@ namespace BoletoNetCore
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0014, 001, 0, "P", '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0015, 001, 0, Empty, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0016, 002, 0, boleto.CodigoMovimentoRetorno, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 004, 0, boleto.Banco.Beneficiario.ContaBancaria.Agencia, '0');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0022, 001, 0, boleto.Banco.Beneficiario.ContaBancaria.DigitoAgencia, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0023, 009, 0, boleto.Banco.Beneficiario.ContaBancaria.Conta, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0032, 001, 0, boleto.Banco.Beneficiario.ContaBancaria.DigitoConta, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0033, 009, 0, boleto.Banco.Beneficiario.ContaBancaria.Conta, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0042, 001, 0, boleto.Banco.Beneficiario.ContaBancaria.DigitoConta, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 004, 0,
+                    boleto.Banco.Beneficiario.ContaBancaria.Agencia, '0');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0022, 001, 0,
+                    boleto.Banco.Beneficiario.ContaBancaria.DigitoAgencia, ' ');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0023, 009, 0,
+                    boleto.Banco.Beneficiario.ContaBancaria.Conta, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0032, 001, 0,
+                    boleto.Banco.Beneficiario.ContaBancaria.DigitoConta, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0033, 009, 0,
+                    boleto.Banco.Beneficiario.ContaBancaria.Conta, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0042, 001, 0,
+                    boleto.Banco.Beneficiario.ContaBancaria.DigitoConta, '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0043, 002, 0, Empty, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0045, 013, 0, boleto.NossoNumero + boleto.NossoNumeroDV, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0045, 013, 0,
+                    boleto.NossoNumero + boleto.NossoNumeroDV, '0');
 
                 if (boleto.TipoCarteira == TipoCarteira.CarteiraCobrancaSimples)
                     reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 058, 001, 0, "5", '0');
@@ -127,9 +190,11 @@ namespace BoletoNetCore
                 if (boleto.TipoCarteira == TipoCarteira.CarteiraCobrancaDescontada)
                     reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 058, 001, 0, "4", '0');
 
-                if (boleto.Banco.Beneficiario.ContaBancaria.TipoFormaCadastramento == TipoFormaCadastramento.ComRegistro)
+                if (boleto.Banco.Beneficiario.ContaBancaria.TipoFormaCadastramento ==
+                    TipoFormaCadastramento.ComRegistro)
                     reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 059, 001, 0, "1", '0');
-                if (boleto.Banco.Beneficiario.ContaBancaria.TipoFormaCadastramento == TipoFormaCadastramento.SemRegistro)
+                if (boleto.Banco.Beneficiario.ContaBancaria.TipoFormaCadastramento ==
+                    TipoFormaCadastramento.SemRegistro)
                     reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 059, 001, 0, "2", '0');
 
                 if (boleto.Banco.Beneficiario.ContaBancaria.TipoDocumento == TipoDocumento.Tradicional)
@@ -146,7 +211,7 @@ namespace BoletoNetCore
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0101, 004, 0, "0", '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0105, 001, 0, "0", ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0106, 001, 0, Empty, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0107, 002, 0, (int)boleto.EspecieDocumento, '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0107, 002, 0, (int) boleto.EspecieDocumento, '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0109, 001, 0, boleto.Aceite, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediDataDDMMAAAA_________, 0110, 008, 0, boleto.DataEmissao, '0');
                 if (boleto.ValorJurosDia == 0)
@@ -163,6 +228,7 @@ namespace BoletoNetCore
                     reg.Adicionar(TTiposDadoEDI.ediDataDDMMAAAA_________, 0119, 008, 0, boleto.DataJuros, '0');
                     reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0127, 015, 2, boleto.ValorJurosDia, '0');
                 }
+
                 if (boleto.ValorDesconto == 0)
                 {
                     // Sem Desconto
@@ -177,9 +243,11 @@ namespace BoletoNetCore
                     reg.Adicionar(TTiposDadoEDI.ediDataDDMMAAAA_________, 0143, 008, 0, boleto.DataDesconto, '0');
                     reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0151, 015, 2, boleto.ValorDesconto, '0');
                 }
+
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0166, 015, 2, boleto.ValorIOF, '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0181, 015, 2, boleto.ValorAbatimento, '0');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0196, 025, 0, boleto.NumeroControleParticipante, ' ');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0196, 025, 0, boleto.NumeroControleParticipante,
+                    ' ');
                 switch (boleto.CodigoProtesto)
                 {
                     case TipoCodigoProtesto.NaoProtestar:
@@ -201,6 +269,7 @@ namespace BoletoNetCore
                         reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0221, 001, 0, 0, '0');
                         break;
                 }
+
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0222, 002, 0, boleto.DiasProtesto, '0');
                 switch (boleto.CodigoBaixaDevolucao)
                 {
@@ -214,6 +283,7 @@ namespace BoletoNetCore
                         reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0224, 001, 0, 0, '0');
                         break;
                 }
+
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0225, 001, 0, "0", '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0226, 002, 0, boleto.DiasBaixaDevolucao, '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0228, 002, 0, "0", '0');
@@ -228,7 +298,7 @@ namespace BoletoNetCore
             }
         }
 
-        private string GerarDetalheSegmentoQRemessaCNAB240(Boleto boleto, ref int numeroRegistroGeral)
+        private string GerarDetalheSegmentoQRemessaCNAB240(Boleto.Boleto boleto, ref int numeroRegistroGeral)
         {
             try
             {
@@ -241,15 +311,21 @@ namespace BoletoNetCore
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0014, 001, 0, "Q", '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0015, 001, 0, Empty, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0016, 002, 0, boleto.CodigoMovimentoRetorno, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 001, 0, boleto.Pagador.TipoCPFCNPJ("0"), '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 001, 0, boleto.Pagador.TipoCPFCNPJ("0"),
+                    '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0019, 015, 0, boleto.Pagador.CPFCNPJ, '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0034, 040, 0, boleto.Pagador.Nome, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0074, 040, 0, boleto.Pagador.Endereco.FormataLogradouro(40), ' ');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0114, 015, 0, boleto.Pagador.Endereco.Bairro, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0129, 008, 0, boleto.Pagador.Endereco.CEP.Replace("-", ""), ' ');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0137, 015, 0, boleto.Pagador.Endereco.Cidade, ' ');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0074, 040, 0,
+                    boleto.Pagador.Endereco.FormataLogradouro(40), ' ');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0114, 015, 0, boleto.Pagador.Endereco.Bairro,
+                    ' ');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0129, 008, 0,
+                    boleto.Pagador.Endereco.CEP.Replace("-", ""), ' ');
+                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0137, 015, 0, boleto.Pagador.Endereco.Cidade,
+                    ' ');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0152, 002, 0, boleto.Pagador.Endereco.UF, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0154, 001, 0, boleto.Avalista.TipoCPFCNPJ("0"), '0');
+                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0154, 001, 0, boleto.Avalista.TipoCPFCNPJ("0"),
+                    '0');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0155, 015, 0, boleto.Avalista.CPFCNPJ, '0');
                 reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0170, 040, 0, boleto.Avalista.Nome, ' ');
                 reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0210, 003, 0, "0", '0');
@@ -267,7 +343,7 @@ namespace BoletoNetCore
             }
         }
 
-        private string GerarDetalheSegmentoRRemessaCNAB240(Boleto boleto, ref int numeroRegistroGeral)
+        private string GerarDetalheSegmentoRRemessaCNAB240(Boleto.Boleto boleto, ref int numeroRegistroGeral)
         {
             try
             {
@@ -312,11 +388,12 @@ namespace BoletoNetCore
             }
         }
 
-        private string GerarDetalheSegmentoSRemessaCNAB240(Boleto boleto, ref int numeroRegistroGeral)
+        private string GerarDetalheSegmentoSRemessaCNAB240(Boleto.Boleto boleto, ref int numeroRegistroGeral)
         {
             try
             {
-                var msg5A7 = boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(80, 200).FitStringLength(200, ' ');
+                var msg5A7 = boleto.MensagemArquivoRemessa.PadRight(500, ' ').Substring(80, 200)
+                    .FitStringLength(200, ' ');
                 if (IsNullOrWhiteSpace(msg5A7))
                     return "";
 
@@ -343,63 +420,19 @@ namespace BoletoNetCore
             }
         }
 
-        public string GerarTrailerLoteRemessaCNAB240(ref int numeroArquivoRemessa, int numeroRegistroGeral, int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples, int numeroRegistroCobrancaVinculada, decimal valorCobrancaVinculada, int numeroRegistroCobrancaCaucionada, decimal valorCobrancaCaucionada, int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada)
-        {
-            try
-            {
-                // O número de registros no lote é igual ao número de registros gerados + 2 (header e trailler do lote)
-                var numeroRegistrosNoLote = numeroRegistroGeral + 2;
-                var reg = new TRegistroEDI();
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0001, 003, 0, "033", '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0004, 004, 0, "0001", '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0008, 001, 0, "5", '0');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0009, 009, 0, Empty, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 006, 0, numeroRegistrosNoLote, '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0024, 217, 0, Empty, ' ');
-                reg.CodificarLinha();
-                return reg.LinhaRegistro;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao gerar HEADER do lote no arquivo de remessa do CNAB400.", ex);
-            }
-        }
-
-        public string GerarTrailerRemessaCNAB240(int numeroRegistroGeral, decimal valorBoletoGeral, int numeroRegistroCobrancaSimples, decimal valorCobrancaSimples, int numeroRegistroCobrancaVinculada, decimal valorCobrancaVinculada, int numeroRegistroCobrancaCaucionada, decimal valorCobrancaCaucionada, int numeroRegistroCobrancaDescontada, decimal valorCobrancaDescontada)
-        {
-            try
-            {
-                // O número de registros no arquivo é igual ao número de registros gerados + 4 (header e trailler do lote / header e trailler do arquivo)
-                var numeroRegistrosNoArquivo = numeroRegistroGeral + 4;
-                var reg = new TRegistroEDI();
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0001, 003, 0, "033", '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0004, 004, 0, "9999", '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0008, 001, 0, "9", '0');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0009, 009, 0, Empty, ' ');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0018, 006, 0, "1", '0');
-                reg.Adicionar(TTiposDadoEDI.ediNumericoSemSeparador_, 0024, 006, 0, numeroRegistrosNoArquivo, '0');
-                reg.Adicionar(TTiposDadoEDI.ediAlphaAliEsquerda_____, 0030, 211, 0, Empty, ' ');
-                reg.CodificarLinha();
-                return reg.LinhaRegistro;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Erro ao gerar HEADER do arquivo de remessa do CNAB400.", ex);
-            }
-        }
-
 
         #region Retorno
 
         public override void LerHeaderRetornoCNAB240(ArquivoRetorno arquivoRetorno, string registro)
         {
-
             //LAYOUT V 2.8 Fevereiro/2017
 
             arquivoRetorno.Banco.Beneficiario = new Beneficiario();
             //017 - 017 Tipo de inscrição da empresa N 001 1 = CPF, 2 = CNPJ
             //018 - 032 Nº de inscrição da empresa N 015
-            arquivoRetorno.Banco.Beneficiario.CPFCNPJ = registro.Substring(16, 1) == "1" ? registro.Substring(21, 11) : registro.Substring(18, 14);
+            arquivoRetorno.Banco.Beneficiario.CPFCNPJ = registro.Substring(16, 1) == "1"
+                ? registro.Substring(21, 11)
+                : registro.Substring(18, 14);
             //053 - 061 Código do Beneficiário N 009
             arquivoRetorno.Banco.Beneficiario.Codigo = registro.Substring(54, 7);
             //073 - 102 Nome da empresa A 030
@@ -421,12 +454,13 @@ namespace BoletoNetCore
 
 
             //144 - 151 Data de geração do arquivo N 008 DDMMAAAA
-            arquivoRetorno.DataGeracao = Utils.ToDateTime(Utils.ToInt32(registro.Substring(143, 8)).ToString("##-##-####"));
+            arquivoRetorno.DataGeracao =
+                Utils.ToDateTime(Utils.ToInt32(registro.Substring(143, 8)).ToString("##-##-####"));
             //158 - 163 Nº seqüencial do arquivo N 006
             arquivoRetorno.NumeroSequencial = Utils.ToInt32(registro.Substring(157, 6));
         }
 
-        public override void LerDetalheRetornoCNAB240SegmentoT(ref Boleto boleto, string registro)
+        public override void LerDetalheRetornoCNAB240SegmentoT(ref Boleto.Boleto boleto, string registro)
         {
             try
             {
@@ -458,7 +492,8 @@ namespace BoletoNetCore
                 boleto.CodigoMovimentoRetorno = registro.Substring(15, 2);
                 boleto.DescricaoMovimentoRetorno = Cnab.MovimentoRetornoCnab240(boleto.CodigoMovimentoRetorno);
                 boleto.CodigoMotivoOcorrencia = registro.Substring(213, 10);
-                boleto.ListMotivosOcorrencia = Cnab.MotivoOcorrenciaCnab240(boleto.CodigoMotivoOcorrencia, boleto.CodigoMovimentoRetorno);
+                boleto.ListMotivosOcorrencia =
+                    Cnab.MotivoOcorrenciaCnab240(boleto.CodigoMotivoOcorrencia, boleto.CodigoMovimentoRetorno);
 
                 //Número do Documento
                 boleto.NumeroDocumento = registro.Substring(54, 15);
@@ -468,7 +503,8 @@ namespace BoletoNetCore
                 boleto.ValorTitulo = Convert.ToDecimal(registro.Substring(77, 15)) / 100;
 
                 //Data Vencimento do Título
-                boleto.DataVencimento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(69, 8)).ToString("##-##-####"));
+                boleto.DataVencimento =
+                    Utils.ToDateTime(Utils.ToInt32(registro.Substring(69, 8)).ToString("##-##-####"));
 
                 //093 – 095 Nº do Banco Cobrador / Recebedor N 003 - LAYOUT V 2.8 Fevereiro/2017 Pág 9
                 boleto.BancoCobradorRecebedor = registro.Substring(92, 3);
@@ -497,7 +533,7 @@ namespace BoletoNetCore
             }
         }
 
-        public override void LerDetalheRetornoCNAB240SegmentoU(ref Boleto boleto, string registro)
+        public override void LerDetalheRetornoCNAB240SegmentoU(ref Boleto.Boleto boleto, string registro)
         {
             try
             {
@@ -513,7 +549,8 @@ namespace BoletoNetCore
 
 
                 //Data Ocorrência no Banco
-                boleto.DataProcessamento = Utils.ToDateTime(Utils.ToInt32(registro.Substring(137, 8)).ToString("##-##-####"));
+                boleto.DataProcessamento =
+                    Utils.ToDateTime(Utils.ToInt32(registro.Substring(137, 8)).ToString("##-##-####"));
 
                 // Data do Crédito
                 boleto.DataCredito = Utils.ToDateTime(Utils.ToInt32(registro.Substring(145, 8)).ToString("##-##-####"));

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
+using BoletoNetCore.Banco;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Boleto
 {
     public class Boletos : List<Boleto>
     {

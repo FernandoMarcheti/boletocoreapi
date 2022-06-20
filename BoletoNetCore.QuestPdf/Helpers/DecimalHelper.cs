@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace BoletoNetCore.QuestPdf
+namespace BoletoNetCore.QuestPdf.Helpers
 {
-    internal static  class DecimalHelper
+    internal static class DecimalHelper
     {
         public static string FormatarMoeda(this decimal valor)
         {
@@ -24,7 +22,7 @@ namespace BoletoNetCore.QuestPdf
         public static decimal Truncar(this decimal valor, int decimals)
         {
             var fator = 1;
-            for (int i = 0; i < decimals; i++)
+            for (var i = 0; i < decimals; i++)
                 fator = fator * 10;
 
             return Math.Truncate(fator * valor) / fator;

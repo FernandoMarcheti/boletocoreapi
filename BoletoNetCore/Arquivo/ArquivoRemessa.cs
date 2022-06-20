@@ -1,25 +1,31 @@
 using System;
 using System.IO;
 using System.Text;
+using BoletoNetCore.Banco;
+using BoletoNetCore.Boleto;
+using BoletoNetCore.Enums;
+using BoletoNetCore.Util;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Arquivo
 {
     public class ArquivoRemessa
     {
-        public IBanco Banco { get; set; }
-        public TipoArquivo TipoArquivo { get; set; }
-        public int NumeroArquivoRemessa { get; set; }
-        public int? NumeroArquivoRemessaNoDia { get; set; }
-
-        public string NomeArquivo => Banco?.FormatarNomeArquivoRemessa(NumeroArquivoRemessaNoDia ?? NumeroArquivoRemessa); //
-
-        public ArquivoRemessa(IBanco banco, TipoArquivo tipoArquivo, int numeroArquivoRemessa, int? numeroArquivoRemessaNoDia = null)
+        public ArquivoRemessa(IBanco banco, TipoArquivo tipoArquivo, int numeroArquivoRemessa,
+            int? numeroArquivoRemessaNoDia = null)
         {
             Banco = banco;
             TipoArquivo = tipoArquivo;
             NumeroArquivoRemessa = numeroArquivoRemessa;
             NumeroArquivoRemessaNoDia = numeroArquivoRemessaNoDia;
         }
+
+        public IBanco Banco { get; set; }
+        public TipoArquivo TipoArquivo { get; set; }
+        public int NumeroArquivoRemessa { get; set; }
+        public int? NumeroArquivoRemessaNoDia { get; set; }
+
+        public string NomeArquivo =>
+            Banco?.FormatarNomeArquivoRemessa(NumeroArquivoRemessaNoDia ?? NumeroArquivoRemessa); //
 
         public void GerarArquivoRemessa(Boletos boletos, Stream stream, bool fecharRemessa = true)
         {
@@ -53,8 +59,8 @@ namespace BoletoNetCore
                         throw new Exception("Layout não encontrado");
                 }
 
-                StreamWriter arquivoRemessa = new StreamWriter(stream, Encoding.GetEncoding("ISO-8859-1"));
-                string strline = string.Empty;
+                var arquivoRemessa = new StreamWriter(stream, Encoding.GetEncoding("ISO-8859-1"));
+                var strline = string.Empty;
 
                 // Header do Arquivo
                 strline = Banco.GerarHeaderRemessa(TipoArquivo, NumeroArquivoRemessa, ref numeroRegistroGeral);
@@ -63,7 +69,7 @@ namespace BoletoNetCore
                 strline = FormataLinhaArquivoCNAB(strline, tamanhoRegistro);
                 arquivoRemessa.WriteLine(strline);
 
-                foreach (Boleto boleto in boletos)
+                foreach (var boleto in boletos)
                 {
                     // Todos os boletos da coleção devem ser do mesmo banco da geração do arquivo remessa
                     // A solução aqui é forçar essa relação, mas talvez seja melhor subir uma exceção detalhando o erro.
@@ -101,18 +107,16 @@ namespace BoletoNetCore
                             valorCobrancaSimples += boleto.ValorTitulo;
                             valorCobrancaDescontada += boleto.ValorIOF;
                             break;
-                        default:
-                            break;
                     }
                 }
 
                 // Trailler do Arquivo
                 strline = Banco.GerarTrailerRemessa(TipoArquivo, NumeroArquivoRemessa,
-                                                            ref numeroRegistroGeral, valorBoletoGeral,
-                                                            numeroRegistroCobrancaSimples, valorCobrancaSimples,
-                                                            numeroRegistroCobrancaVinculada, valorCobrancaVinculada,
-                                                            numeroRegistroCobrancaCaucionada, valorCobrancaCaucionada,
-                                                            numeroRegistroCobrancaDescontada, valorCobrancaDescontada);
+                    ref numeroRegistroGeral, valorBoletoGeral,
+                    numeroRegistroCobrancaSimples, valorCobrancaSimples,
+                    numeroRegistroCobrancaVinculada, valorCobrancaVinculada,
+                    numeroRegistroCobrancaCaucionada, valorCobrancaCaucionada,
+                    numeroRegistroCobrancaDescontada, valorCobrancaDescontada);
                 if (!string.IsNullOrWhiteSpace(strline))
                 {
                     strline = FormataLinhaArquivoCNAB(strline, tamanhoRegistro);
@@ -140,21 +144,16 @@ namespace BoletoNetCore
         private string FormataLinhaArquivoCNAB(string strLinha, int tamanhoRegistro)
         {
             strLinha = strLinha.ToUpper();
-            if (Banco.RemoveAcentosArquivoRemessa)
-            {
-                strLinha = Utils.SubstituiCaracteresEspeciais(strLinha);
-            }
+            if (Banco.RemoveAcentosArquivoRemessa) strLinha = Utils.SubstituiCaracteresEspeciais(strLinha);
             if (tamanhoRegistro != 0)
             {
-                string[] strLinhas = strLinha.Split('\n');
-                foreach (string s in strLinhas)
-                {
+                var strLinhas = strLinha.Split('\n');
+                foreach (var s in strLinhas)
                     if (s.Replace("\r", "").Length != tamanhoRegistro)
-                        throw new Exception("Registro com tamanho incorreto:" + s.Replace("\r", "").Length.ToString() + " - " + s);
-                }
+                        throw new Exception("Registro com tamanho incorreto:" + s.Replace("\r", "").Length + " - " + s);
             }
+
             return strLinha.ToUpper();
         }
-
     }
 }

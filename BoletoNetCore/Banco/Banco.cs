@@ -1,17 +1,26 @@
 using System;
 using System.Collections.Generic;
+using BoletoNetCore.Banco.Banrisul;
+using BoletoNetCore.Banco.Bradesco;
+using BoletoNetCore.Banco.Caixa;
+using BoletoNetCore.Banco.Cecred;
+using BoletoNetCore.Banco.Itau;
+using BoletoNetCore.Banco.Safra;
+using BoletoNetCore.Banco.Santander;
+using BoletoNetCore.Banco.Sicredi;
+using BoletoNetCore.Banco.Siscoob;
 using BoletoNetCore.Exceptions;
 using BoletoNetCore.Extensions;
-using Microsoft.VisualBasic;
+using BoletoNetCore.Util;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco
 {
     public static class Banco
     {
         private static readonly Dictionary<int, Lazy<IBanco>> Bancos = new Dictionary<int, Lazy<IBanco>>
         {
-            [001] = BancoBrasil.Instance,
-            [004] = BancoNordeste.Instance,
+            [001] = BancoBrasil.BancoBrasil.Instance,
+            [004] = BancoNordeste.BancoNordeste.Instance,
             [033] = BancoSantander.Instance,
             [041] = BancoBanrisul.Instance,
             [085] = BancoCecred.Instance,
@@ -24,10 +33,16 @@ namespace BoletoNetCore
         };
 
         public static IBanco Instancia(int codigoBanco)
-            => (Bancos.ContainsKey(codigoBanco) ? Bancos[codigoBanco] : throw BoletoNetCoreException.BancoNaoImplementado(codigoBanco)).Value;
+        {
+            return (Bancos.ContainsKey(codigoBanco)
+                ? Bancos[codigoBanco]
+                : throw BoletoNetCoreException.BancoNaoImplementado(codigoBanco)).Value;
+        }
 
         public static IBanco Instancia(Bancos codigoBanco)
-            => Instancia((int)codigoBanco);
+        {
+            return Instancia((int) codigoBanco);
+        }
 
         /// <summary>
         ///     Formata código de barras
@@ -39,7 +54,7 @@ namespace BoletoNetCore
         ///     10 a 19 - 10 - Valor
         ///     20 a 44 - 25 - Campo Livre
         /// </summary>
-        public static void FormataCodigoBarra(Boleto boleto)
+        public static void FormataCodigoBarra(Boleto.Boleto boleto)
         {
             var banco = boleto.Banco;
             var codigoBarra = boleto.CodigoBarra;
@@ -52,42 +67,38 @@ namespace BoletoNetCore
             codigoBarra.CodigoBanco = banco.Codigo.ToString().FitStringLength(3, '0');
             codigoBarra.Moeda = boleto.CodigoMoeda;
             codigoBarra.FatorVencimento = boleto.DataVencimento.FatorVencimento();
-            codigoBarra.ValorDocumento = boleto.ValorTitulo.ToString("N2").Replace(",", "").Replace(".", "").PadLeft(10, '0');
+            codigoBarra.ValorDocumento =
+                boleto.ValorTitulo.ToString("N2").Replace(",", "").Replace(".", "").PadLeft(10, '0');
         }
 
         /// <summary>
-        /// Formata Mensagens de Juros e Multa e Desconto nas instruções do Caixa
+        ///     Formata Mensagens de Juros e Multa e Desconto nas instruções do Caixa
         /// </summary>
         /// <param name="boleto"></param>
-        public static void FormataMensagemInstrucao(Boleto boleto)
+        public static void FormataMensagemInstrucao(Boleto.Boleto boleto)
         {
             boleto.MensagemInstrucoesCaixaFormatado = "";
 
             //JUROS
-            if (boleto.ImprimirValoresAuxiliares == true && boleto.ValorJurosDia > 0)
-            {
-                boleto.MensagemInstrucoesCaixaFormatado += $"Cobrar juros de R$ {boleto.ValorJurosDia.ToString("N2")} por dia de atraso APÓS {boleto.DataJuros.ToString("dd/MM/yyyy")}{Environment.NewLine}";
-            }
-            else if (boleto.ImprimirValoresAuxiliares == true && boleto.PercentualJurosDia > 0)
-            {
-                boleto.MensagemInstrucoesCaixaFormatado += $"Cobrar juros de {boleto.PercentualJurosDia.ToString("N2")}% por dia de atraso APÓS {boleto.DataJuros.ToString("dd/MM/yyyy")}{Environment.NewLine}";
-            }
+            if (boleto.ImprimirValoresAuxiliares && boleto.ValorJurosDia > 0)
+                boleto.MensagemInstrucoesCaixaFormatado +=
+                    $"Cobrar juros de R$ {boleto.ValorJurosDia.ToString("N2")} por dia de atraso APÓS {boleto.DataJuros.ToString("dd/MM/yyyy")}{Environment.NewLine}";
+            else if (boleto.ImprimirValoresAuxiliares && boleto.PercentualJurosDia > 0)
+                boleto.MensagemInstrucoesCaixaFormatado +=
+                    $"Cobrar juros de {boleto.PercentualJurosDia.ToString("N2")}% por dia de atraso APÓS {boleto.DataJuros.ToString("dd/MM/yyyy")}{Environment.NewLine}";
 
             //MULTA
-            if (boleto.ImprimirValoresAuxiliares == true && boleto.ValorMulta > 0)
-            {
-                boleto.MensagemInstrucoesCaixaFormatado += $"Cobrar multa de R$ {boleto.ValorMulta.ToString("N2")} a partir DE {boleto.DataMulta.ToString("dd/MM/yyyy")}{Environment.NewLine}";
-            }
-            else if (boleto.ImprimirValoresAuxiliares == true && boleto.PercentualMulta > 0)
-            {
-                boleto.MensagemInstrucoesCaixaFormatado += $"Cobrar multa de {boleto.PercentualMulta.ToString("N2")}% a partir DE {boleto.DataMulta.ToString("dd/MM/yyyy")}{Environment.NewLine}";
-            }
+            if (boleto.ImprimirValoresAuxiliares && boleto.ValorMulta > 0)
+                boleto.MensagemInstrucoesCaixaFormatado +=
+                    $"Cobrar multa de R$ {boleto.ValorMulta.ToString("N2")} a partir DE {boleto.DataMulta.ToString("dd/MM/yyyy")}{Environment.NewLine}";
+            else if (boleto.ImprimirValoresAuxiliares && boleto.PercentualMulta > 0)
+                boleto.MensagemInstrucoesCaixaFormatado +=
+                    $"Cobrar multa de {boleto.PercentualMulta.ToString("N2")}% a partir DE {boleto.DataMulta.ToString("dd/MM/yyyy")}{Environment.NewLine}";
 
             //DESCONTO
-            if (boleto.ImprimirValoresAuxiliares == true && boleto.ValorDesconto > 0)
-            {
-                boleto.MensagemInstrucoesCaixaFormatado += $"Conceder desconto de R$ {boleto.ValorDesconto.ToString("N2")} ATÉ {boleto.DataDesconto.ToString("dd/MM/yyyy")}{Environment.NewLine}";
-            }
+            if (boleto.ImprimirValoresAuxiliares && boleto.ValorDesconto > 0)
+                boleto.MensagemInstrucoesCaixaFormatado +=
+                    $"Conceder desconto de R$ {boleto.ValorDesconto.ToString("N2")} ATÉ {boleto.DataDesconto.ToString("dd/MM/yyyy")}{Environment.NewLine}";
 
             //Aqui, define se a mensagem de instrução manual deve ser impressa, 
             //na minha visão se o usuário passou uma instrução, esta deveria ser impressa sempre.
@@ -98,7 +109,6 @@ namespace BoletoNetCore
                 boleto.MensagemInstrucoesCaixaFormatado += Environment.NewLine;
                 boleto.MensagemInstrucoesCaixaFormatado += boleto.MensagemInstrucoesCaixa;
             }
-
         }
 
         /// <summary>
@@ -117,7 +127,7 @@ namespace BoletoNetCore
         ///     Composto pelo fator de vencimento com 4(quatro) caracteres e o valor do documento com 10(dez) caracteres, sem
         ///     separadores e sem edição.
         /// </summary>
-        public static void FormataLinhaDigitavel(Boleto boleto)
+        public static void FormataLinhaDigitavel(Boleto.Boleto boleto)
         {
             var codigoBarra = boleto.CodigoBarra;
             if (string.IsNullOrWhiteSpace(codigoBarra.CampoLivre))
@@ -201,6 +211,7 @@ namespace BoletoNetCore
                 else
                     peso = peso + 1;
             }
+
             var digito = (10 - soma % 10) % 10;
             return digito;
         }

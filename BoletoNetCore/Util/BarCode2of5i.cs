@@ -1,50 +1,11 @@
 using System;
 using System.Drawing;
+using System.Text;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Util
 {
     public class BarCode2of5i : BarCodeBase
     {
-        #region variables
-        private readonly string[] _cPattern = new string[100];
-        private const string START = "0000";
-        private const string STOP = "1000";
-        private Bitmap _bitmap;
-        private Graphics _g;
-        #endregion
-
-        #region Constructor
-        public BarCode2of5i()
-        {
-        }
-        /// <summary>
-        /// Code 2 of 5 intrelaced Constructor
-        /// </summary>
-        /// <param name="code">The string that contents the numeric code</param>
-        /// <param name="barWidth">The Width of each bar</param>
-        /// <param name="height">The Height of each bar</param>
-        public BarCode2of5i(string code, int barWidth, int height)
-        {
-            Code = code;
-            Height = height;
-            Width = barWidth;
-        }
-        /// <summary>
-        /// Code 2 of 5 intrelaced Constructor
-        /// </summary>
-        /// <param name="code">The string that contents the numeric code</param>
-        /// <param name="barWidth">The Width of each bar</param>
-        /// <param name="height">The Height of each bar</param>
-        /// <param name="digits">Number of digits of code</param>
-        public BarCode2of5i(string code, int barWidth, int height, int digits)
-        {
-            Code = code;
-            Height = height;
-            Width = barWidth;
-            Digits = digits;
-        }
-        #endregion
-
         private void FillPatern()
         {
             int f;
@@ -63,24 +24,20 @@ namespace BoletoNetCore
                 _cPattern[8] = "10010";
                 _cPattern[9] = "01010";
                 //Create a draw pattern for each char from 0 to 99
-                for (int f1 = 9; f1 >= 0; f1--)
+                for (var f1 = 9; f1 >= 0; f1--)
+                for (var f2 = 9; f2 >= 0; f2--)
                 {
-                    for (int f2 = 9; f2 >= 0; f2--)
-                    {
-                        f = f1 * 10 + f2;
-                        var builder = new System.Text.StringBuilder();
-                        for (int i = 0; i < 5; i++)
-                        {
-                            builder.Append(_cPattern[f1][i] + _cPattern[f2][i].ToString());
-                        }
-                        strTemp = builder.ToString();
-                        _cPattern[f] = strTemp;
-                    }
+                    f = f1 * 10 + f2;
+                    var builder = new StringBuilder();
+                    for (var i = 0; i < 5; i++) builder.Append(_cPattern[f1][i] + _cPattern[f2][i].ToString());
+                    strTemp = builder.ToString();
+                    _cPattern[f] = strTemp;
                 }
             }
         }
+
         /// <summary>
-        /// Generate the Bitmap of Barcode.
+        ///     Generate the Bitmap of Barcode.
         /// </summary>
         /// <returns>Return System.Drawing.Bitmap</returns>
         public Bitmap ToBitmap()
@@ -88,19 +45,13 @@ namespace BoletoNetCore
             XPos = 0;
             YPos = 0;
 
-            if (Digits == 0)
-            {
-                Digits = Code.Length;
-            }
+            if (Digits == 0) Digits = Code.Length;
 
             if (Digits % 2 > 0) Digits++;
 
-            while (Code.Length < Digits || Code.Length % 2 > 0)
-            {
-                Code = "0" + Code;
-            }
+            while (Code.Length < Digits || Code.Length % 2 > 0) Code = "0" + Code;
 
-            int width = (2 * Full + 3 * Thin) * (Digits) + 7 * Thin + Full;
+            var width = (2 * Full + 3 * Thin) * Digits + 7 * Thin + Full;
 
             _bitmap = new Bitmap(width, Height);
             _g = Graphics.FromImage(_bitmap);
@@ -125,13 +76,60 @@ namespace BoletoNetCore
 
             return _bitmap;
         }
+
         /// <summary>
-        /// Returns the byte array of Barcode
+        ///     Returns the byte array of Barcode
         /// </summary>
         /// <returns>byte[]</returns>
         public byte[] ToByte()
         {
             return base.ToByte(ToBitmap());
         }
+
+        #region variables
+
+        private readonly string[] _cPattern = new string[100];
+        private const string START = "0000";
+        private const string STOP = "1000";
+        private Bitmap _bitmap;
+        private Graphics _g;
+
+        #endregion
+
+        #region Constructor
+
+        public BarCode2of5i()
+        {
+        }
+
+        /// <summary>
+        ///     Code 2 of 5 intrelaced Constructor
+        /// </summary>
+        /// <param name="code">The string that contents the numeric code</param>
+        /// <param name="barWidth">The Width of each bar</param>
+        /// <param name="height">The Height of each bar</param>
+        public BarCode2of5i(string code, int barWidth, int height)
+        {
+            Code = code;
+            Height = height;
+            Width = barWidth;
+        }
+
+        /// <summary>
+        ///     Code 2 of 5 intrelaced Constructor
+        /// </summary>
+        /// <param name="code">The string that contents the numeric code</param>
+        /// <param name="barWidth">The Width of each bar</param>
+        /// <param name="height">The Height of each bar</param>
+        /// <param name="digits">Number of digits of code</param>
+        public BarCode2of5i(string code, int barWidth, int height, int digits)
+        {
+            Code = code;
+            Height = height;
+            Width = barWidth;
+            Digits = digits;
+        }
+
+        #endregion
     }
 }

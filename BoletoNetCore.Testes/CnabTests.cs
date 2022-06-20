@@ -1,6 +1,5 @@
-﻿using System;
-using System.Linq;
-using BoletoNetCore.Extensions;
+﻿using System.Linq;
+using BoletoNetCore.Util;
 using NUnit.Framework;
 
 namespace BoletoNetCore.Testes
@@ -16,7 +15,7 @@ namespace BoletoNetCore.Testes
         public void MotivoOcorrenciaDescricao(string codMovimentoRetorno, string codMotivo)
         {
             var motivos = Cnab.MotivoOcorrenciaCnab240(codMotivo, codMovimentoRetorno).ToList();
-            Assert.IsTrue(motivos.Any( q=> q == "Tipo / Número de Inscrição do Beneficiário Inválidos"));
+            Assert.IsTrue(motivos.Any(q => q == "Tipo / Número de Inscrição do Beneficiário Inválidos"));
             Assert.IsTrue(motivos.Any(q => q == "Data de Vencimento Anterior a Data de Emissão"));
         }
 
@@ -52,17 +51,16 @@ namespace BoletoNetCore.Testes
         }
 
         /// <summary>
-        /// Em inconsistências parciais, a função tenta ler dentro do possível até o padrão de inconsistência encontrado
+        ///     Em inconsistências parciais, a função tenta ler dentro do possível até o padrão de inconsistência encontrado
         /// </summary>
         /// <param name="codMovimentoRetorno"></param>
         /// <param name="codMotivo"></param>
         [TestCase("06", "000200002")]
-        public void MotivoOcorrenciaDescricaoParcialmenteIncorretoNaoQuebra(string codMovimentoRetorno, string codMotivo)
+        public void MotivoOcorrenciaDescricaoParcialmenteIncorretoNaoQuebra(string codMovimentoRetorno,
+            string codMotivo)
         {
             var motivos = Cnab.MotivoOcorrenciaCnab240(codMotivo, codMovimentoRetorno).ToList();
             Assert.IsTrue(motivos.Count == 1);
         }
-
-
     }
 }

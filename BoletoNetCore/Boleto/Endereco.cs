@@ -1,7 +1,7 @@
-namespace BoletoNetCore
+namespace BoletoNetCore.Boleto
 {
     /// <summary>
-    /// Representa o endereço do Beneficiário ou Pagador.
+    ///     Representa o endereço do Beneficiário ou Pagador.
     /// </summary>
     public class Endereco
     {
@@ -19,7 +19,9 @@ namespace BoletoNetCore
             if (!string.IsNullOrEmpty(LogradouroNumero))
                 logradouroCompleto += " " + LogradouroNumero;
             if (!string.IsNullOrEmpty(LogradouroComplemento))
-                logradouroCompleto += " " + (LogradouroComplemento.Length > 20 ? LogradouroComplemento.Substring(0, 20) : LogradouroComplemento);
+                logradouroCompleto += " " + (LogradouroComplemento.Length > 20
+                    ? LogradouroComplemento.Substring(0, 20)
+                    : LogradouroComplemento);
 
             if (tamanhoFinal == 0)
                 return LogradouroEndereco + logradouroCompleto;

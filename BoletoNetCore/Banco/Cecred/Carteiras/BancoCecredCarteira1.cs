@@ -1,41 +1,39 @@
-﻿using BoletoNetCore.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
+using BoletoNetCore.Util;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Cecred.Carteiras
 {
     [CarteiraCodigo("1")]
     internal class BancoCecredCarteira1 : ICarteira<BancoCecred>
     {
-        internal static Lazy<ICarteira<BancoCecred>> Instance { get; } = new Lazy<ICarteira<BancoCecred>>(() => new BancoCecredCarteira1());
+        internal static Lazy<ICarteira<BancoCecred>> Instance { get; } =
+            new Lazy<ICarteira<BancoCecred>>(() => new BancoCecredCarteira1());
 
-        public string FormataCodigoBarraCampoLivre(Boleto boleto)
+        public string FormataCodigoBarraCampoLivre(Boleto.Boleto boleto)
         {
-            string parte1 = string.Format("{0}{1}{2}",
-                 Utils.FormatCode(boleto.Banco.Beneficiario.Codigo, 6),
-                 boleto.NossoNumero,
-                 Utils.FormatCode(boleto.Carteira, 2));
+            var parte1 = string.Format("{0}{1}{2}",
+                Utils.FormatCode(boleto.Banco.Beneficiario.Codigo, 6),
+                boleto.NossoNumero,
+                Utils.FormatCode(boleto.Carteira, 2));
             return parte1;
         }
 
-        public void FormataNossoNumero(Boleto boleto)
+        public void FormataNossoNumero(Boleto.Boleto boleto)
         {
-            string nossoNumero = boleto.NossoNumero;
-            boleto.NossoNumeroDV = Mod11(Sequencial(boleto)).ToString();
-            string conta = Utils.FormatCode(boleto.Banco.Beneficiario.ContaBancaria.Conta + boleto.Banco.Beneficiario.ContaBancaria.DigitoConta, 8);
+            var nossoNumero = boleto.NossoNumero;
+            boleto.NossoNumeroDV = Mod11(Sequencial(boleto));
+            var conta = Utils.FormatCode(
+                boleto.Banco.Beneficiario.ContaBancaria.Conta + boleto.Banco.Beneficiario.ContaBancaria.DigitoConta, 8);
             boleto.NossoNumero = Sequencial(boleto);
             boleto.NossoNumeroFormatado = string.Format("{0}/{1}", conta, nossoNumero);
-
         }
-         
+
         private string Mod11(string seq)
         {
-            int num1 = 0;
-            int num2 = 9;
-            int num3 = 2;
-            for (int startIndex = seq.Length - 1; startIndex >= 0; --startIndex)
+            var num1 = 0;
+            var num2 = 9;
+            var num3 = 2;
+            for (var startIndex = seq.Length - 1; startIndex >= 0; --startIndex)
             {
                 num1 += Convert.ToInt32(seq.Substring(startIndex, 1)) * num2;
                 if (num2 == num3)
@@ -43,7 +41,8 @@ namespace BoletoNetCore
                 else
                     --num2;
             }
-            int num4 = num1 % 11;
+
+            var num4 = num1 % 11;
             string str;
             switch (num4)
             {
@@ -57,15 +56,16 @@ namespace BoletoNetCore
                     str = num4.ToString();
                     break;
             }
+
             return str;
         }
 
-        private string Sequencial(Boleto boleto)
+        private string Sequencial(Boleto.Boleto boleto)
         {
-            string conta = boleto.Banco.Beneficiario.ContaBancaria.Conta;
-            string digitoConta = boleto.Banco.Beneficiario.ContaBancaria.DigitoConta;
-            string contaComDigito = conta + digitoConta;
-            string nossoNumero = boleto.NossoNumero;
+            var conta = boleto.Banco.Beneficiario.ContaBancaria.Conta;
+            var digitoConta = boleto.Banco.Beneficiario.ContaBancaria.DigitoConta;
+            var contaComDigito = conta + digitoConta;
+            var nossoNumero = boleto.NossoNumero;
             return string.Format("{0}{1}", Utils.FormatCode(contaComDigito, 8), Utils.FormatCode(nossoNumero, 9));
         }
     }

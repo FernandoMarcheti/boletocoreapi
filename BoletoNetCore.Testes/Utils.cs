@@ -1,6 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using BoletoNetCore.Arquivo;
+using BoletoNetCore.Banco;
+using BoletoNetCore.Boleto;
+using BoletoNetCore.Boleto.DemonstrativoValoresBoleto;
+using BoletoNetCore.BoletoImpressao;
+using BoletoNetCore.Enums;
 using NUnit.Framework;
 using Wkhtmltopdf.NetCore;
 
@@ -12,7 +18,8 @@ namespace BoletoNetCore.Testes
 
         private static int _proximoNossoNumero = 1;
 
-        internal static Beneficiario GerarBeneficiario(string codigoBeneficiario, string digitoCodigoBeneficiario, string codigoTransmissao, ContaBancaria contaBancaria)
+        internal static Beneficiario GerarBeneficiario(string codigoBeneficiario, string digitoCodigoBeneficiario,
+            string codigoTransmissao, ContaBancaria contaBancaria)
         {
             return new Beneficiario
             {
@@ -81,32 +88,33 @@ namespace BoletoNetCore.Testes
             return boletos;
         }
 
-        internal static Boleto GerarBoleto(IBanco banco, int i, string aceite, int NossoNumeroInicial, string informativoParcelas)
+        internal static Boleto.Boleto GerarBoleto(IBanco banco, int i, string aceite, int NossoNumeroInicial,
+            string informativoParcelas)
         {
             if (aceite == "?")
                 aceite = _contador % 2 == 0 ? "N" : "A";
 
-            var boleto = new Boleto(banco)
+            var boleto = new Boleto.Boleto(banco)
             {
                 Pagador = GerarPagador(),
                 DataEmissao = DateTime.Now.AddDays(-3),
                 DataProcessamento = DateTime.Now,
                 DataVencimento = DateTime.Now.AddMonths(i),
-                ValorTitulo = (decimal)100 * i,
+                ValorTitulo = (decimal) 100 * i,
                 NossoNumero = NossoNumeroInicial == 0 ? "" : (NossoNumeroInicial + _proximoNossoNumero).ToString(),
-                NumeroDocumento = "BB" + _proximoNossoNumero.ToString("D6") + (char)(64 + i),
+                NumeroDocumento = "BB" + _proximoNossoNumero.ToString("D6") + (char) (64 + i),
                 EspecieDocumento = TipoEspecieDocumento.DM,
                 Aceite = aceite,
                 CodigoInstrucao1 = "11",
                 CodigoInstrucao2 = "22",
                 DataDesconto = DateTime.Now.AddMonths(i),
-                ValorDesconto = (decimal)(100 * i * 0.10),
+                ValorDesconto = (decimal) (100 * i * 0.10),
                 DataMulta = DateTime.Now.AddMonths(i),
-                PercentualMulta = (decimal)2.00,
-                ValorMulta = (decimal)(100 * i * (2.00 / 100)),
+                PercentualMulta = (decimal) 2.00,
+                ValorMulta = (decimal) (100 * i * (2.00 / 100)),
                 DataJuros = DateTime.Now.AddMonths(i),
-                PercentualJurosDia = (decimal)0.2,
-                ValorJurosDia = (decimal)(100 * i * (0.2 / 100)),
+                PercentualJurosDia = (decimal) 0.2,
+                ValorJurosDia = (decimal) (100 * i * (0.2 / 100)),
                 AvisoDebitoAutomaticoContaCorrente = "2",
                 MensagemArquivoRemessa = "Mensagem para o arquivo remessa",
                 NumeroControleParticipante = "CHAVEPRIMARIA" + _proximoNossoNumero,
@@ -114,13 +122,16 @@ namespace BoletoNetCore.Testes
                 ImprimirValoresAuxiliares = true
             };
             // Mensagem - Instruções do Caixa
-            StringBuilder msgCaixa = new StringBuilder();
+            var msgCaixa = new StringBuilder();
             if (boleto.ValorDesconto > 0)
-                msgCaixa.AppendLine($"Conceder desconto de {boleto.ValorDesconto.ToString("R$ ##,##0.00")} até {boleto.DataDesconto.ToString("dd/MM/yyyy")}. ");
+                msgCaixa.AppendLine(
+                    $"Conceder desconto de {boleto.ValorDesconto.ToString("R$ ##,##0.00")} até {boleto.DataDesconto.ToString("dd/MM/yyyy")}. ");
             if (boleto.ValorMulta > 0)
-                msgCaixa.AppendLine($"Cobrar multa de {boleto.ValorMulta.ToString("R$ ##,##0.00")} após o vencimento. ");
+                msgCaixa.AppendLine(
+                    $"Cobrar multa de {boleto.ValorMulta.ToString("R$ ##,##0.00")} após o vencimento. ");
             if (boleto.ValorJurosDia > 0)
-                msgCaixa.AppendLine($"Cobrar juros de {boleto.ValorJurosDia.ToString("R$ ##,##0.00")} por dia de atraso. ");
+                msgCaixa.AppendLine(
+                    $"Cobrar juros de {boleto.ValorJurosDia.ToString("R$ ##,##0.00")} por dia de atraso. ");
             boleto.MensagemInstrucoesCaixa = msgCaixa.ToString();
             // Avalista
             if (_contador % 3 == 0)
@@ -128,19 +139,52 @@ namespace BoletoNetCore.Testes
                 boleto.Avalista = GerarPagador();
                 boleto.Avalista.Nome = boleto.Avalista.Nome.Replace("Pagador", "Avalista");
             }
+
             // Grupo Demonstrativo do Boleto
-            var grupoDemonstrativo = new GrupoDemonstrativo { Descricao = "GRUPO 1" };
-            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo { Descricao = "Grupo 1, Item 1", Referencia = boleto.DataEmissao.AddMonths(-1).Month + "/" + boleto.DataEmissao.AddMonths(-1).Year, Valor = boleto.ValorTitulo * (decimal)0.15 });
-            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo { Descricao = "Grupo 1, Item 2", Referencia = boleto.DataEmissao.AddMonths(-1).Month + "/" + boleto.DataEmissao.AddMonths(-1).Year, Valor = boleto.ValorTitulo * (decimal)0.05 });
+            var grupoDemonstrativo = new GrupoDemonstrativo {Descricao = "GRUPO 1"};
+            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo
+            {
+                Descricao = "Grupo 1, Item 1",
+                Referencia = boleto.DataEmissao.AddMonths(-1).Month + "/" + boleto.DataEmissao.AddMonths(-1).Year,
+                Valor = boleto.ValorTitulo * (decimal) 0.15
+            });
+            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo
+            {
+                Descricao = "Grupo 1, Item 2",
+                Referencia = boleto.DataEmissao.AddMonths(-1).Month + "/" + boleto.DataEmissao.AddMonths(-1).Year,
+                Valor = boleto.ValorTitulo * (decimal) 0.05
+            });
             boleto.Demonstrativos.Add(grupoDemonstrativo);
-            grupoDemonstrativo = new GrupoDemonstrativo { Descricao = "GRUPO 2" };
-            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo { Descricao = "Grupo 2, Item 1", Referencia = boleto.DataEmissao.Month + "/" + boleto.DataEmissao.Year, Valor = boleto.ValorTitulo * (decimal)0.20 });
+            grupoDemonstrativo = new GrupoDemonstrativo {Descricao = "GRUPO 2"};
+            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo
+            {
+                Descricao = "Grupo 2, Item 1", Referencia = boleto.DataEmissao.Month + "/" + boleto.DataEmissao.Year,
+                Valor = boleto.ValorTitulo * (decimal) 0.20
+            });
             boleto.Demonstrativos.Add(grupoDemonstrativo);
-            grupoDemonstrativo = new GrupoDemonstrativo { Descricao = "GRUPO 3" };
-            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo { Descricao = "Grupo 3, Item 1", Referencia = boleto.DataEmissao.AddMonths(-1).Month + "/" + boleto.DataEmissao.AddMonths(-1).Year, Valor = boleto.ValorTitulo * (decimal)0.37 });
-            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo { Descricao = "Grupo 3, Item 2", Referencia = boleto.DataEmissao.Month + "/" + boleto.DataEmissao.Year, Valor = boleto.ValorTitulo * (decimal)0.03 });
-            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo { Descricao = "Grupo 3, Item 3", Referencia = boleto.DataEmissao.Month + "/" + boleto.DataEmissao.Year, Valor = boleto.ValorTitulo * (decimal)0.12 });
-            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo { Descricao = "Grupo 3, Item 4", Referencia = boleto.DataEmissao.AddMonths(+1).Month + "/" + boleto.DataEmissao.AddMonths(+1).Year, Valor = boleto.ValorTitulo * (decimal)0.08 });
+            grupoDemonstrativo = new GrupoDemonstrativo {Descricao = "GRUPO 3"};
+            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo
+            {
+                Descricao = "Grupo 3, Item 1",
+                Referencia = boleto.DataEmissao.AddMonths(-1).Month + "/" + boleto.DataEmissao.AddMonths(-1).Year,
+                Valor = boleto.ValorTitulo * (decimal) 0.37
+            });
+            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo
+            {
+                Descricao = "Grupo 3, Item 2", Referencia = boleto.DataEmissao.Month + "/" + boleto.DataEmissao.Year,
+                Valor = boleto.ValorTitulo * (decimal) 0.03
+            });
+            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo
+            {
+                Descricao = "Grupo 3, Item 3", Referencia = boleto.DataEmissao.Month + "/" + boleto.DataEmissao.Year,
+                Valor = boleto.ValorTitulo * (decimal) 0.12
+            });
+            grupoDemonstrativo.Itens.Add(new ItemDemonstrativo
+            {
+                Descricao = "Grupo 3, Item 4",
+                Referencia = boleto.DataEmissao.AddMonths(+1).Month + "/" + boleto.DataEmissao.AddMonths(+1).Year,
+                Valor = boleto.ValorTitulo * (decimal) 0.08
+            });
             boleto.Demonstrativos.Add(grupoDemonstrativo);
 
             boleto.ValidarDados();
@@ -149,15 +193,18 @@ namespace BoletoNetCore.Testes
             return boleto;
         }
 
-        internal static void TestarHomologacao(IBanco banco, TipoArquivo tipoArquivo, string nomeCarteira, int quantidadeBoletos, bool gerarBoletoPdfHtml, string aceite, int NossoNumeroInicial)
+        internal static void TestarHomologacao(IBanco banco, TipoArquivo tipoArquivo, string nomeCarteira,
+            int quantidadeBoletos, bool gerarBoletoPdfHtml, string aceite, int NossoNumeroInicial)
         {
             var boletos = GerarBoletos(banco, quantidadeBoletos, aceite, NossoNumeroInicial);
-            Assert.AreEqual(quantidadeBoletos, boletos.Count, "Quantidade de boletos diferente de " + quantidadeBoletos);
+            Assert.AreEqual(quantidadeBoletos, boletos.Count,
+                "Quantidade de boletos diferente de " + quantidadeBoletos);
 
             // Define os nomes dos arquivos, cria pasta e apaga arquivos anteriores
             var nomeArquivoREM = Path.Combine(Path.GetTempPath(), "BoletoNetCore", $"{nomeCarteira}_{tipoArquivo}.REM");
             var nomeArquivoPDF = Path.Combine(Path.GetTempPath(), "BoletoNetCore", $"{nomeCarteira}_{tipoArquivo}.PDF");
-            var nomeArquivoHTML = Path.Combine(Path.GetTempPath(), "BoletoNetCore", $"{nomeCarteira}_{tipoArquivo}.html");
+            var nomeArquivoHTML =
+                Path.Combine(Path.GetTempPath(), "BoletoNetCore", $"{nomeCarteira}_{tipoArquivo}.html");
             if (!Directory.Exists(Path.GetDirectoryName(nomeArquivoREM)))
                 Directory.CreateDirectory(Path.GetDirectoryName(nomeArquivoREM));
             if (File.Exists(nomeArquivoREM))
@@ -166,12 +213,14 @@ namespace BoletoNetCore.Testes
                 if (File.Exists(nomeArquivoREM))
                     Assert.Fail("Arquivo Remessa não foi excluído: " + nomeArquivoREM);
             }
+
             if (File.Exists(nomeArquivoPDF))
             {
                 File.Delete(nomeArquivoPDF);
                 if (File.Exists(nomeArquivoPDF))
                     Assert.Fail("Arquivo Boletos (PDF) não foi excluído: " + nomeArquivoPDF);
             }
+
             if (File.Exists(nomeArquivoHTML))
             {
                 File.Delete(nomeArquivoHTML);
@@ -184,7 +233,10 @@ namespace BoletoNetCore.Testes
             {
                 var arquivoRemessa = new ArquivoRemessa(boletos.Banco, tipoArquivo, 1);
                 using (var fileStream = new FileStream(nomeArquivoREM, FileMode.Create))
+                {
                     arquivoRemessa.GerarArquivoRemessa(boletos, fileStream);
+                }
+
                 if (!File.Exists(nomeArquivoREM))
                     Assert.Fail("Arquivo Remessa não encontrado: " + nomeArquivoREM);
             }
@@ -221,12 +273,14 @@ namespace BoletoNetCore.Testes
                         var boletoHtml = html.ToString();
                         File.WriteAllText(nomeArquivoHTML, boletoHtml);
 
-                        var pdf = new Wkhtmltopdf.NetCore.HtmlAsPdf().GetPDF(boletoHtml);
+                        var pdf = new HtmlAsPdf().GetPDF(boletoHtml);
                         using (var fs = new FileStream(nomeArquivoPDF, FileMode.Create))
-                            fs.Write( pdf, 0, pdf.Length);
+                        {
+                            fs.Write(pdf, 0, pdf.Length);
+                        }
+
                         if (!File.Exists(nomeArquivoPDF))
                             Assert.Fail("Arquivo Boletos (PDF) não encontrado: " + nomeArquivoPDF);
-
                     }
                 }
                 catch (Exception e)

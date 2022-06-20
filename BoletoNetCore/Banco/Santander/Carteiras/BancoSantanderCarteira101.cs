@@ -2,19 +2,19 @@
 using BoletoNetCore.Extensions;
 using static System.String;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Santander.Carteiras
 {
     [CarteiraCodigo("101")]
     internal class BancoSantanderCarteira101 : ICarteira<BancoSantander>
     {
-        internal static Lazy<ICarteira<BancoSantander>> Instance { get; } = new Lazy<ICarteira<BancoSantander>>(() => new BancoSantanderCarteira101());
-
         private BancoSantanderCarteira101()
         {
-
         }
 
-        public void FormataNossoNumero(Boleto boleto)
+        internal static Lazy<ICarteira<BancoSantander>> Instance { get; } =
+            new Lazy<ICarteira<BancoSantander>>(() => new BancoSantanderCarteira101());
+
+        public void FormataNossoNumero(Boleto.Boleto boleto)
         {
             //COBRANÇA SIMPLES - RCR(Rápida com Registro)
             boleto.CarteiraImpressaoBoleto = "RCR";
@@ -31,7 +31,7 @@ namespace BoletoNetCore
             boleto.NossoNumeroFormatado = $"{boleto.NossoNumero}-{boleto.NossoNumeroDV}";
         }
 
-        public string FormataCodigoBarraCampoLivre(Boleto boleto)
+        public string FormataCodigoBarraCampoLivre(Boleto.Boleto boleto)
         {
             return $"9{boleto.Banco.Beneficiario.Codigo}{boleto.NossoNumero}{boleto.NossoNumeroDV}0101";
         }

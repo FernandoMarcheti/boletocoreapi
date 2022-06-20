@@ -1,16 +1,16 @@
-using BoletoNetCore;
-using QuestPDF.Drawing;
-using QuestPDF.Infrastructure;
-using QuestPDF.Fluent;
-using System;
-using Microsoft.Extensions.FileProviders;
 using System.Reflection;
+using BoletoNetCore.Banco;
+using BoletoNetCore.Boleto;
+using Microsoft.Extensions.FileProviders;
+using QuestPDF.Drawing;
+using QuestPDF.Fluent;
+using QuestPDF.Infrastructure;
 
-namespace BoletoNetCore.QuestPdf
+namespace BoletoNetCore.QuestPdf.Carne
 {
     internal class BoletoCarne : IDocument
     {
-        private BoletoNetCore.Boletos listaBoletos;
+        private Boletos listaBoletos;
 
         public void Compose(IDocumentContainer container)
         {
@@ -18,17 +18,23 @@ namespace BoletoNetCore.QuestPdf
             {
                 page.MarginHorizontal(20);
                 page.MarginVertical(20);
-                page.Content().Element(this.ComposeContent);
+                page.Content().Element(ComposeContent);
             });
+        }
+
+        public DocumentMetadata GetMetadata()
+        {
+            return DocumentMetadata.Default;
         }
 
         private byte[] ObterLogoBanco(IBanco banco)
         {
             var embeddedProvider = new EmbeddedFileProvider(Assembly.GetExecutingAssembly());
-            using (var reader = embeddedProvider.GetFileInfo($"logos/{banco.Codigo.ToString("000")}.bmp").CreateReadStream())
+            using (var reader = embeddedProvider.GetFileInfo($"logos/{banco.Codigo.ToString("000")}.bmp")
+                       .CreateReadStream())
             {
                 var logo = new byte[reader.Length];
-                reader.Read(logo, 0, (int)reader.Length);
+                reader.Read(logo, 0, (int) reader.Length);
                 return logo;
             }
         }
@@ -38,13 +44,13 @@ namespace BoletoNetCore.QuestPdf
             container.Stack(stack =>
             {
                 byte[] logo = null;
-                int codBanco = 0;
-                foreach (var bol in this.listaBoletos)
+                var codBanco = 0;
+                foreach (var bol in listaBoletos)
                 {
                     if (logo == null || codBanco != bol.Banco.Codigo)
                     {
                         codBanco = bol.Banco.Codigo;
-                        logo = this.ObterLogoBanco(bol.Banco);
+                        logo = ObterLogoBanco(bol.Banco);
                     }
 
                     stack.Item().Row(row =>
@@ -53,19 +59,15 @@ namespace BoletoNetCore.QuestPdf
                         row.RelativeColumn().PaddingLeft(5).Component(new ConteudoBoleto(bol, logo));
                     });
 
-                    stack.Item().PaddingBottom(3).Text("Recibo do Pagador - Autenticar no Verso", BoletoPdfConstants.LabelStyle);
+                    stack.Item().PaddingBottom(3).Text("Recibo do Pagador - Autenticar no Verso",
+                        BoletoPdfConstants.LabelStyle);
                     stack.Item().ExtendHorizontal().BorderHorizontal(BoletoPdfConstants.BorderSize);
                     stack.Item().Height(15).ExtendHorizontal();
                 }
             });
         }
 
-        public DocumentMetadata GetMetadata()
-        {
-            return DocumentMetadata.Default;
-        }
-
-        public byte[] BoletoPdf(BoletoNetCore.Boletos listaBoletos)
+        public byte[] BoletoPdf(Boletos listaBoletos)
         {
             this.listaBoletos = listaBoletos;
             return this.GeneratePdf();

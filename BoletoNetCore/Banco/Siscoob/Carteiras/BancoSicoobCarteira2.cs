@@ -1,24 +1,19 @@
 ﻿using System;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Siscoob.Carteiras
 {
-
     [CarteiraCodigo("1/02")]
     internal class BancoSicoobCarteira2 : ICarteira<BancoSicoob>
     {
+        internal static Lazy<ICarteira<BancoSicoob>> Instance { get; } =
+            new Lazy<ICarteira<BancoSicoob>>(() => new BancoSicoobCarteira2());
 
-        internal static Lazy<ICarteira<BancoSicoob>> Instance { get; } = new Lazy<ICarteira<BancoSicoob>>(() => new BancoSicoobCarteira2());
-        public BancoSicoobCarteira2()
-        {
-            
-        }
-
-        public string FormataCodigoBarraCampoLivre(Boleto boleto)
+        public string FormataCodigoBarraCampoLivre(Boleto.Boleto boleto)
         {
             return "                         ";
         }
 
-        public void FormataNossoNumero(Boleto boleto)
+        public void FormataNossoNumero(Boleto.Boleto boleto)
         {
         }
     }

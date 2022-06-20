@@ -1,10 +1,8 @@
-﻿using BoletoNetCore.Exceptions;
-using System;
-using System.Collections.Generic;
+﻿using System;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco
 {
-    partial class BancoFebraban<T> 
+    partial class BancoFebraban<T>
     {
         public virtual void LerHeaderRetornoCNAB400(string registro)
         {
@@ -18,6 +16,5 @@ namespace BoletoNetCore
                 throw new Exception("Erro ao ler HEADER do arquivo de RETORNO / CNAB 400.", ex);
             }
         }
-
     }
 }

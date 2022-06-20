@@ -1,24 +1,27 @@
-namespace BoletoNetCore
+namespace BoletoNetCore.Util
 {
     /// <summary>
-    /// Indica os tipos de registro possíveis em um arquivo EDI
+    ///     Indica os tipos de registro possÃ­veis em um arquivo EDI
     /// </summary>
     public enum TTipoRegistroEDI
     {
         /// <summary>
-        /// Indicador de registro Header
+        ///     Indicador de registro Header
         /// </summary>
         treHeader,
+
         /// <summary>
-        /// Indica um registro detalhe
+        ///     Indica um registro detalhe
         /// </summary>
         treDetalhe,
+
         /// <summary>
-        /// Indica um registro Trailler
+        ///     Indica um registro Trailler
         /// </summary>
         treTrailler,
+
         /// <summary>
-        /// Indica um registro sem definições, utilizado para transmissão socket ou similar
+        ///     Indica um registro sem definiÃ§Ãµes, utilizado para transmissÃ£o socket ou similar
         /// </summary>
         treLinhaUnica
     }

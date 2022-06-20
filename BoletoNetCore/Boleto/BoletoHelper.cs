@@ -1,16 +1,17 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using BoletoNetCore.Arquivo;
+using BoletoNetCore.Enums;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Boleto
 {
     /// <summary>
-    /// Classe Auxiliar com mÈtodos de extens„o para executar comandos a partir de um Boleto ou de uma lista de boletos
+    ///     Classe Auxiliar com m√©todos de extens√£o para executar comandos a partir de um Boleto ou de uma lista de boletos
     /// </summary>
     public static class BoletoHelper
     {
         /// <summary>
-        /// Recupera um arquivo HTML com encoding do banco
+        ///     Recupera um arquivo HTML com encoding do banco
         /// </summary>
         /// <param name="boleto"></param>
         /// <returns></returns>
@@ -19,15 +20,16 @@ namespace BoletoNetCore
             throw new NotImplementedException();
         }
 
-        public static Stream GerarRemessa(this Boletos boletos, int numArquivoRemessa, TipoArquivo tipoArquivo = TipoArquivo.CNAB240 )
+        public static Stream GerarRemessa(this Boletos boletos, int numArquivoRemessa,
+            TipoArquivo tipoArquivo = TipoArquivo.CNAB240)
         {
-            ArquivoRemessa rem = new ArquivoRemessa(boletos.Banco, TipoArquivo.CNAB240, numArquivoRemessa);
-            MemoryStream ms = new MemoryStream(2048);
+            var rem = new ArquivoRemessa(boletos.Banco, TipoArquivo.CNAB240, numArquivoRemessa);
+            var ms = new MemoryStream(2048);
             try
             {
                 rem.GerarArquivoRemessa(boletos, ms, false);
                 ms.Position = 0;
-                return ms as Stream;
+                return ms;
             }
             catch (Exception)
             {
@@ -36,7 +38,6 @@ namespace BoletoNetCore
         }
 
         /// <summary>
-        /// 
         /// </summary>
         /// <param name="boletos"></param>
         /// <returns></returns>
@@ -44,6 +45,5 @@ namespace BoletoNetCore
         {
             throw new NotImplementedException();
         }
-
     }
 }

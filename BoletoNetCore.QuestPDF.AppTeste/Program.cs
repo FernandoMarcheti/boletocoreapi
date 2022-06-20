@@ -1,11 +1,15 @@
 ﻿using System;
 using System.IO;
+using BoletoNetCore.Banco;
+using BoletoNetCore.Boleto;
+using BoletoNetCore.Enums;
+using BoletoNetCore.QuestPdf;
 
 namespace BoletoNetCore.QuestPDF.AppTeste
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             try
             {
@@ -28,9 +32,8 @@ namespace BoletoNetCore.QuestPDF.AppTeste
                     TipoFormaCadastramento = TipoFormaCadastramento.ComRegistro,
                     TipoImpressaoBoleto = TipoImpressaoBoleto.Empresa,
                     OperacaoConta = "05"
-
                 };
-                var banco = Banco.Instancia(Bancos.Sicredi);
+                var banco = Banco.Banco.Instancia(Bancos.Sicredi);
                 banco.Beneficiario = Utils.GerarBeneficiario("85305", "", "", contaBancaria);
                 banco.FormataBeneficiario();
 

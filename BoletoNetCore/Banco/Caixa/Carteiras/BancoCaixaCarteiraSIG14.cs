@@ -2,19 +2,19 @@
 using BoletoNetCore.Extensions;
 using static System.String;
 
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco.Caixa.Carteiras
 {
     [CarteiraCodigo("SIG14")]
     internal class BancoCaixaCarteiraSIG14 : ICarteira<BancoCaixa>
     {
-        internal static Lazy<ICarteira<BancoCaixa>> Instance { get; } = new Lazy<ICarteira<BancoCaixa>>(() => new BancoCaixaCarteiraSIG14());
-
         private BancoCaixaCarteiraSIG14()
         {
-
         }
 
-        public void FormataNossoNumero(Boleto boleto)
+        internal static Lazy<ICarteira<BancoCaixa>> Instance { get; } =
+            new Lazy<ICarteira<BancoCaixa>>(() => new BancoCaixaCarteiraSIG14());
+
+        public void FormataNossoNumero(Boleto.Boleto boleto)
         {
             boleto.CarteiraImpressaoBoleto = "RG";
 
@@ -27,13 +27,15 @@ namespace BoletoNetCore
             {
                 // Se o Nosso Número tem 17 dígitos, obrigatoriamente deve iniciar com "14"
                 if (!boleto.NossoNumero.StartsWith("14"))
-                    throw new Exception($"Nosso Número ({boleto.NossoNumero}) deve iniciar com \"14\" e conter 17 dígitos.");
+                    throw new Exception(
+                        $"Nosso Número ({boleto.NossoNumero}) deve iniciar com \"14\" e conter 17 dígitos.");
             }
             else
             {
                 // Se o Nosso Número não tem 17 dígitos, deve ser informado com até 15 posições, para ser adicionado automaticamente o "14" no inicio totalizando 17 dígitos.
                 if (boleto.NossoNumero.Length > 15)
-                    throw new Exception($"Nosso Número ({boleto.NossoNumero}) deve iniciar com \"14\" e conter 17 dígitos.");
+                    throw new Exception(
+                        $"Nosso Número ({boleto.NossoNumero}) deve iniciar com \"14\" e conter 17 dígitos.");
                 boleto.NossoNumero = $"14{boleto.NossoNumero.PadLeft(15, '0')}";
             }
 
@@ -41,7 +43,7 @@ namespace BoletoNetCore
             boleto.NossoNumeroFormatado = $"{boleto.NossoNumero}-{boleto.NossoNumeroDV}";
         }
 
-        public string FormataCodigoBarraCampoLivre(Boleto boleto)
+        public string FormataCodigoBarraCampoLivre(Boleto.Boleto boleto)
         {
             var beneficiario = boleto.Banco.Beneficiario;
 
@@ -54,7 +56,8 @@ namespace BoletoNetCore
             else
                 throw new ArgumentException("O código do cedente deve ter 6 ou 7 dígitos");
 
-            formataCampoLivre += $"{boleto.NossoNumero.Substring(2, 3)}1{boleto.NossoNumero.Substring(5, 3)}4{boleto.NossoNumero.Substring(8, 9)}";
+            formataCampoLivre +=
+                $"{boleto.NossoNumero.Substring(2, 3)}1{boleto.NossoNumero.Substring(5, 3)}4{boleto.NossoNumero.Substring(8, 9)}";
             formataCampoLivre += formataCampoLivre.CalcularDVCaixa();
             return formataCampoLivre;
         }

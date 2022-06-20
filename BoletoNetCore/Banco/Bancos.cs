@@ -1,4 +1,4 @@
-namespace BoletoNetCore
+namespace BoletoNetCore.Banco
 {
     public enum Bancos : ushort
     {
