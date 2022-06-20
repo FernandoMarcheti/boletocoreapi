@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFrameworks>netstandard2.0</TargetFrameworks>
+        <ApplicationIcon/>
+        <OutputType>Library</OutputType>
+        <StartupObject/>
+        <IsPackable>true</IsPackable>
+        <Version>3.0.2</Version>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <AssemblyVersion>3.0.2.0</AssemblyVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="Imagens\*"/>
+        <EmbeddedResource Include="BoletoImpressao\**\*.css"/>
+        <EmbeddedResource Include="BoletoImpressao\**\*.jpg"/>
+        <EmbeddedResource Include="BoletoImpressao\**\*.jpeg"/>
+        <EmbeddedResource Include="BoletoImpressao\**\*.html"/>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+        <PackageReference Include="System.Drawing.Common" Version="4.5.1"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="BoletoImpressao\Parts\Pix.html"/>
+        <None Remove="Imagens\085.jpg"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="System.Net.Http.Json" Version="5.0.0"/>
+    </ItemGroup>
+
+
+</Project>
