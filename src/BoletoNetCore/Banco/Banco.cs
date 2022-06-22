@@ -100,6 +100,8 @@ namespace BoletoNetCore.Banco
                 boleto.MensagemInstrucoesCaixaFormatado +=
                     $"Conceder desconto de R$ {boleto.ValorDesconto.ToString("N2")} ATÉ {boleto.DataDesconto.ToString("dd/MM/yyyy")}{Environment.NewLine}";
 
+            boleto.MensagemInstrucoesCaixaFormatado += "Protestar 5 dias úties após vecimento";
+
             //Aqui, define se a mensagem de instrução manual deve ser impressa, 
             //na minha visão se o usuário passou uma instrução, esta deveria ser impressa sempre.
             //Entretanto, para manter o comportamento atual sem quebrar nenhuma aplicação, foi criado um parâmetro com valor "false"

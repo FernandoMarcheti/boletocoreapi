@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/dotnet/core/aspnet:2.2 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
+EXPOSE 7000
 
 # Stage 1 (copy && restore layers from app)
 FROM  mcr.microsoft.com/dotnet/core/sdk:3.0 AS build
@@ -32,4 +33,7 @@ RUN dotnet publish --configuration Release --nologo --no-build -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+RUN apt-get update 
+RUN apt-get install -y libgdiplus libc6-dev
+RUN mkdir -p /boletos
 ENTRYPOINT ["dotnet", "Api.dll"]
