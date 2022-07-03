@@ -237,7 +237,6 @@ namespace BoletoNetCore.BoletoImpressao
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboBeneficiarioParte9.html"));
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboBeneficiarioParte10.html"));
                 html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboBeneficiarioParte11.html"));
-                html.Append(GetResourceHypertext("BoletoNetCore.BoletoImpressao.Parts.ReciboBeneficiarioParte12.html"));
                 return html.ToString();
             }
             catch (Exception ex)
